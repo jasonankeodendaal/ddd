@@ -79,22 +79,22 @@ Reference Images: ${referenceImageUrls.join('\n')}`;
   const inputClass = "w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-3 text-stone-200 focus:outline-none focus:border-stone-400 transition-colors focus:ring-1 focus:ring-stone-400 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] text-sm";
 
   return (
-    <div className="w-full pb-20">
-      <div className="text-center mb-16">
-          <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-stone-500 mb-4">Pricing & Commissions</p>
-          <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-white drop-shadow-lg uppercase">Investment</h2>
-          <div className="w-px h-16 bg-gradient-to-b from-stone-500/0 via-stone-500/50 to-stone-500/0 mx-auto mt-8"></div>
+    <div className="w-full pb-16 md:pb-20">
+      <div className="text-center mb-10 md:mb-16">
+          <p className="text-[9px] md:text-[10px] font-bold tracking-[0.2em] md:tracking-[0.3em] uppercase text-stone-500 mb-3 md:mb-4">Pricing & Commissions</p>
+          <h2 className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tighter text-white drop-shadow-lg uppercase">Investment</h2>
+          <div className="w-px h-10 md:h-16 bg-gradient-to-b from-stone-500/0 via-stone-500/50 to-stone-500/0 mx-auto mt-6 md:mt-8"></div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-12 lg:gap-24 items-start">
         
         {/* Pricing / Packages Column */}
-        <div className="lg:col-span-6 space-y-10">
-            <h3 className="text-2xl font-light tracking-tight text-stone-200 border-b border-white/5 pb-4">Curated Experiences</h3>
+        <div className="xl:col-span-6 space-y-8 md:space-y-10">
+            <h3 className="text-xl md:text-2xl font-light tracking-tight text-stone-200 border-b border-white/5 pb-4">Curated Experiences</h3>
             
             {pricingOpts.length === 0 ? (
-                <div className="p-8 border border-white/5 flex items-center justify-center">
-                    <p className="text-stone-500 font-light text-sm italic">Please contact us for custom quotes.</p>
+                <div className="p-6 md:p-8 border border-white/5 flex items-center justify-center">
+                    <p className="text-stone-500 font-light text-xs md:text-sm italic">Please contact us for custom quotes.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -106,13 +106,13 @@ Reference Images: ${referenceImageUrls.join('\n')}`;
                             <div 
                                 key={idx} 
                                 onClick={() => setSelectedPackage(opt)}
-                                className="group relative w-full aspect-[4/5] overflow-hidden cursor-pointer bg-[#0a0a0a]"
+                                className="group relative w-full aspect-square md:aspect-[4/5] overflow-hidden cursor-pointer bg-[#0a0a0a] rounded-xl border border-white/5"
                             >
                                 {/* Gallery Grid Layout for Thumbnail */}
-                                <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-[2px]">
+                                <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-[1px]">
                                     {previewImages.map((img: string, i: number) => (
-                                        <div key={i} className={`flex items-center justify-center p-1 overflow-hidden bg-[#000] ${previewImages.length === 1 ? 'col-span-2 row-span-2' : previewImages.length === 2 ? 'col-span-1 row-span-2' : previewImages.length === 3 && i === 0 ? 'col-span-2 row-span-1' : ''}`}>
-                                            <img src={img} className="w-full h-full object-contain grayscale mix-blend-luminosity opacity-70 group-hover:mix-blend-normal group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-1000 group-hover:scale-105" alt={`preview-${i}`} />
+                                        <div key={i} className={`flex items-center justify-center overflow-hidden bg-[#000] ${previewImages.length === 1 ? 'col-span-2 row-span-2' : previewImages.length === 2 ? 'col-span-1 row-span-2' : previewImages.length === 3 && i === 0 ? 'col-span-2 row-span-1' : ''}`}>
+                                            <img src={img} className="w-full h-full object-cover grayscale mix-blend-luminosity opacity-70 group-hover:mix-blend-normal group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-1000 group-hover:scale-105" alt={`preview-${i}`} />
                                         </div>
                                     ))}
                                     {previewImages.length === 0 && (
@@ -121,16 +121,16 @@ Reference Images: ${referenceImageUrls.join('\n')}`;
                                 </div>
                                 
                                 {/* Overlay / Gradient */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none transition-opacity duration-700 group-hover:opacity-80"></div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent pointer-events-none transition-opacity duration-700 group-hover:opacity-80"></div>
                                 
                                 {/* Content */}
-                                <div className="absolute inset-0 p-6 flex flex-col justify-end pointer-events-none">
+                                <div className="absolute inset-0 p-5 md:p-6 flex flex-col justify-end pointer-events-none">
                                     <div className="flex flex-col gap-1 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                                        <h3 className="text-xl font-bold text-white drop-shadow-md tracking-tight uppercase line-clamp-1">{opt.label || 'Package Name'}</h3>
-                                        <div className="text-[10px] font-bold uppercase tracking-widest text-stone-400">R {opt.price || '0'}</div>
+                                        <h3 className="text-lg md:text-xl font-bold text-white drop-shadow-md tracking-tight uppercase line-clamp-1">{opt.label || 'Package Name'}</h3>
+                                        <div className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-stone-400">R {opt.price || '0'}</div>
                                     </div>
                                     {opt.images?.length > 4 && (
-                                      <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-2 py-1 text-[10px] text-stone-300 font-bold tracking-widest uppercase">
+                                      <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-[9px] md:text-[10px] text-stone-300 font-bold tracking-widest uppercase">
                                           +{opt.images.length - 4}
                                       </div>
                                     )}
@@ -143,8 +143,8 @@ Reference Images: ${referenceImageUrls.join('\n')}`;
         </div>
 
         {/* Booking Form Column */}
-        <div className="lg:col-span-6">
-            <h3 className="text-2xl font-light tracking-tight text-stone-200 border-b border-white/5 pb-4 mb-8">Secure a Session</h3>
+        <div className="xl:col-span-6">
+            <h3 className="text-xl md:text-2xl font-light tracking-tight text-stone-200 border-b border-white/5 pb-4 mb-6 md:mb-8">Secure a Session</h3>
              
              {success ? (
                  <div className="bg-[#121212] border border-white/5 text-stone-200 p-8 text-center shadow-inner pt-16 pb-16">

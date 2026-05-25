@@ -26,7 +26,7 @@ const PhotographyHome: React.FC<{ settings: any }> = ({ settings }) => {
     <div className="animate-fade-in w-full flex flex-col items-center">
       
       {/* Flipping Background Hero Section - Bleeding Full Viewport */}
-      <section className="w-full relative h-[85vh] -mt-32 mb-20 overflow-hidden flex items-center justify-center">
+      <section className="w-full relative h-[60vh] md:h-[85vh] -mt-24 md:-mt-32 mb-10 md:mb-20 overflow-hidden flex items-center justify-center">
         {images.map((img, idx) => (
             <div 
               key={idx}
@@ -38,33 +38,33 @@ const PhotographyHome: React.FC<{ settings: any }> = ({ settings }) => {
             </div>
         ))}
         
-        <div className="relative z-20 text-center px-6 max-w-4xl mx-auto flex flex-col items-center mt-20">
-           <p className="text-[10px] md:text-xs font-bold tracking-[0.3em] uppercase text-stone-300 mb-6 drop-shadow-sm">
+        <div className="relative z-20 text-center px-4 md:px-6 max-w-4xl mx-auto flex flex-col items-center mt-12 md:mt-20">
+           <p className="text-[9px] md:text-xs font-bold tracking-[0.2em] md:tracking-[0.3em] uppercase text-stone-300 mb-4 md:mb-6 drop-shadow-sm">
                {settings.companyName || 'Fine Art Photography'}
            </p>
-           <h1 className="text-5xl md:text-8xl font-black tracking-tighter text-white drop-shadow-2xl leading-[0.9] mix-blend-overlay">
+           <h1 className="text-4xl sm:text-5xl md:text-8xl font-black tracking-tighter text-white drop-shadow-2xl leading-[1.1] md:leading-[0.9] mix-blend-overlay">
              {settings.hero?.title || 'Capturing The Moment'}
            </h1>
         </div>
       </section>
 
       {/* Welcome to Photography Section */}
-      <section className="w-full max-w-4xl mx-auto px-4 md:px-0 py-20 text-center space-y-10 border-b border-white/5">
-         <h2 className="text-3xl md:text-4xl font-light tracking-tight text-stone-200">
+      <section className="w-full max-w-4xl mx-auto px-4 md:px-0 py-12 md:py-20 text-center space-y-6 md:space-y-10 border-b border-white/5">
+         <h2 className="text-2xl md:text-4xl font-light tracking-tight text-stone-200">
              Welcome to our Studio
          </h2>
-         <div className="w-px h-16 bg-gradient-to-b from-stone-500/0 via-stone-500/50 to-stone-500/0 mx-auto"></div>
-         <p className="text-lg md:text-xl text-stone-400 font-light leading-relaxed max-w-2xl mx-auto">
+         <div className="w-px h-10 md:h-16 bg-gradient-to-b from-stone-500/0 via-stone-500/50 to-stone-500/0 mx-auto"></div>
+         <p className="text-base md:text-xl text-stone-400 font-light leading-relaxed max-w-2xl mx-auto px-2">
              {settings.hero?.subtitle || 'We specialize in professional photography tailored to your unique story. Beautifully crafted, minimal, and authentic.'}
          </p>
-         <button className="px-8 py-3 bg-transparent text-stone-300 border border-stone-600 hover:border-white hover:text-white uppercase tracking-widest text-[10px] font-bold transition-colors mt-8">
+         <button className="px-6 md:px-8 py-2 md:py-3 bg-transparent text-stone-300 border border-stone-600 hover:border-white hover:text-white uppercase tracking-widest text-[9px] md:text-[10px] font-bold transition-colors mt-6 md:mt-8">
             View Pricing
          </button>
       </section>
 
       {/* Meet the Owner Section */}
-      <section className="w-full max-w-5xl mx-auto px-4 md:px-0 py-24">
-        <div className="flex flex-col md:flex-row items-center gap-16 md:gap-24">
+      <section className="w-full max-w-5xl mx-auto px-4 md:px-0 py-16 md:py-24">
+        <div className="flex flex-col md:flex-row items-center gap-10 md:gap-24">
             {/* Free flowing portrait */}
             <div className="w-full md:w-1/2 relative">
                 {settings.aboutUsImageUrl ? (

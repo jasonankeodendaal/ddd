@@ -1,5 +1,6 @@
 
 import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { compressImage } from './imageCompression';
 
 // --- Types ---
 type CollectionName = 'portfolio' | 'specials' | 'showroom' | 'bookings' | 'expenses' | 'inventory' | 'settings' | 'invoices' | 'clients' | 'photo_library' | 'photo_bookings';
@@ -174,8 +175,16 @@ export const dbSetDoc = async (collection: CollectionName, docId: string, data: 
 
 export const dbUploadFile = async (file: File, bucket: string, pathPrefix: string = ''): Promise<string> => {
   if (isSupabaseConfigured && supabase) {
-    const filePath = `${pathPrefix}${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-    const { error } = await supabase.storage.from(bucket).upload(filePath, file);
+    let fileToUpload = file;
+    if (file.type.startsWith('image/')) {
+        try {
+            fileToUpload = await compressImage(file, 1920, 1080, 0.75); // compress to max 1920x1080 with 75% quality
+        } catch (e) {
+            console.warn('Image compression failed, using original file', e);
+        }
+    }
+    const filePath = `${pathPrefix}${Date.now()}-${fileToUpload.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+    const { error } = await supabase.storage.from(bucket).upload(filePath, fileToUpload);
     if (error) throw error;
     const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
     return publicUrlData.publicUrl;

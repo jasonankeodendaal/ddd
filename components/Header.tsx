@@ -34,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate, logoUrl, companyName }) => 
           <div className="pointer-events-auto flex items-center gap-4">
               <button 
                 onClick={() => onNavigate('photography')} 
-                className="bg-white text-black hover:bg-gray-100 px-8 py-3.5 rounded-3xl shadow-2xl uppercase font-black tracking-widest text-sm transition-all duration-300 hover:scale-105 hover:-translate-y-1 block border border-white/50"
+                className="bg-white text-black hover:bg-gray-100 px-4 py-2 md:px-8 md:py-3.5 rounded-full md:rounded-3xl shadow-xl md:shadow-2xl uppercase font-black tracking-widest text-[10px] md:text-sm transition-all duration-300 hover:scale-105 hover:-translate-y-1 block border border-white/50"
                 style={{ boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}
               >
                   Magical Memories
