@@ -43,20 +43,44 @@ const PhotographyApp: React.FC<Props> = ({ onNavigateHome }) => {
       <style>{`
         @keyframes float-3d {
             0% { transform: translateY(110vh) rotate(0deg) scale(0.8); opacity: 0; }
-            10% { opacity: 0.08; }
-            90% { opacity: 0.08; }
+            10% { opacity: 0.35; }
+            90% { opacity: 0.35; }
             100% { transform: translateY(-20vh) rotate(360deg) scale(1.2); opacity: 0; }
         }
         .float-icon {
             position: absolute;
             animation: float-3d linear infinite;
-            filter: drop-shadow(0 20px 30px rgba(0,0,0,0.8)) grayscale(50%) brightness(0.8);
+            filter: drop-shadow(0 15px 25px rgba(255,255,255,0.15)) grayscale(10%) brightness(1.5) contrast(2.5) saturate(1.2);
             will-change: transform;
+        }
+        @keyframes flash-bulb {
+            0%, 90% { opacity: 0; transform: scale(0.8); }
+            92% { opacity: 0.35; transform: scale(1.5); filter: blur(8px); }
+            95% { opacity: 0; transform: scale(3); filter: blur(25px); }
+            96% { opacity: 0.15; transform: scale(1.2); filter: blur(15px); }
+            98%, 100% { opacity: 0; transform: scale(1); }
+        }
+        .flash-bg {
+            background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 70%);
+            animation: flash-bulb 14s infinite;
+        }
+        .flash-bg-2 {
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(200,200,255,0) 60%);
+            animation: flash-bulb 21s infinite;
+            animation-delay: -8s;
+        }
+        .flash-bg-3 {
+            background: radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 65%);
+            animation: flash-bulb 17s infinite;
+            animation-delay: -3s;
         }
       `}</style>
 
       {/* Background ambient light effects & Floating Icons */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+          <div className="absolute top-[20%] left-[30%] w-[400px] h-[400px] -ml-[200px] -mt-[200px] rounded-full flash-bg mix-blend-screen"></div>
+          <div className="absolute top-[40%] right-[20%] w-[500px] h-[500px] -mr-[250px] -mt-[250px] rounded-full flash-bg-2 mix-blend-screen"></div>
+          <div className="absolute top-[70%] left-[15%] w-[350px] h-[350px] -ml-[175px] -mt-[175px] rounded-full flash-bg-3 mix-blend-screen"></div>
           <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-stone-800/10 blur-[140px]"></div>
           <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-stone-400/5 blur-[120px]"></div>
           
@@ -77,7 +101,6 @@ const PhotographyApp: React.FC<Props> = ({ onNavigateHome }) => {
                         width: `${width}px`,
                         animationDuration: `${duration}s`,
                         animationDelay: `${delay}s`,
-                        opacity: 0.05,
                         zIndex: 0
                     }}
                  />

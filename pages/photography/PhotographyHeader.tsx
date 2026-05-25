@@ -19,11 +19,11 @@ const PhotographyHeader: React.FC<Props> = ({ settings, currentView, onNavigate,
 
   return (
     <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-4xl bg-[#121212]/80 backdrop-blur-xl border border-white/10 text-white rounded-[2rem] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)]">
-      <div className="px-6 h-16 flex items-center justify-between">
+      <div className="px-6 h-20 md:h-24 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <a onClick={() => switchView('home')} className="cursor-pointer">
             {settings?.logoUrl ? (
-                <img src={settings.logoUrl} alt={settings.companyName || 'Photography'} className="h-8 w-auto object-contain filter drop-shadow opacity-90 hover:opacity-100 transition" />
+                <img src={settings.logoUrl} alt={settings.companyName || 'Photography'} className="h-16 md:h-20 w-auto object-contain filter drop-shadow opacity-90 hover:opacity-100 transition" />
             ) : (
                 <h1 className="text-sm font-black uppercase tracking-[0.2em] text-stone-200">{settings?.companyName || 'Photography'}</h1>
             )}
