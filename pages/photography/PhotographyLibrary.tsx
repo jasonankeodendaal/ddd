@@ -37,35 +37,39 @@ const LibraryItem: React.FC<{ item: any, index: number }> = ({ item, index }) =>
     const [isFullScreen, setIsFullScreen] = useState(false);
 
     return (
-        <div className={`flex flex-col ${index % 2 !== 0 ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-4 md:gap-16 py-4 md:py-8 border-b border-white/5 last:border-0`}>
+        <div className={`group flex flex-col ${index % 2 !== 0 ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-6 md:gap-20 py-8 md:py-16 border-b border-white/5 last:border-0`}>
             {/* Primary Image Cover */}
-            <div className="w-4/5 md:w-1/3 shrink-0">
+            <div className="w-full md:w-2/5 shrink-0">
                 {currentImage ? (
-                    <div className="relative group w-full cursor-pointer" onClick={() => setIsFullScreen(true)}>
-                        <div className="absolute inset-0 bg-stone-900/10 group-hover:bg-transparent transition duration-500 z-10 pointer-events-none"></div>
-                        <img src={currentImage} alt={item.title} className="w-full h-auto aspect-[3/4] object-cover transition duration-1000 ease-out shadow-lg rounded-xl" />
+                    <div className="relative cursor-pointer overflow-hidden rounded-2xl shadow-2xl transition-all duration-700 hover:shadow-stone-700/20" onClick={() => setIsFullScreen(true)}>
+                        <img src={currentImage} alt={item.title} className="w-full h-auto aspect-[4/5] object-cover transition-transform duration-700 group-hover:scale-105" />
                     </div>
                 ) : (
-                    <div className="w-full aspect-[3/4] bg-neutral-900 border border-white/5 flex items-center justify-center rounded-xl">
-                        <span className="text-stone-600 text-xs tracking-widest uppercase">No Image</span>
+                    <div className="w-full aspect-[4/5] bg-stone-900 border border-white/5 flex items-center justify-center rounded-2xl">
+                        <span className="text-stone-600 text-[10px] tracking-widest uppercase italic">No Image</span>
                     </div>
                 )}
             </div>
             
             {/* Story & Details */}
-            <div className="w-full md:w-2/3 space-y-3">
-                <div className="space-y-0.5">
-                    <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-stone-500">Editorial</p>
-                    <h3 className="text-2xl md:text-4xl font-black tracking-tighter text-stone-200 drop-shadow-sm">{item.title}</h3>
+            <div className="w-full md:w-3/5 md:pl-16 space-y-8">
+                <div className="space-y-3 pb-8 border-b border-white/10">
+                    <p className="text-[11px] font-semibold tracking-[0.4em] uppercase text-stone-500 italic">Curated Collection</p>
+                    <h3 className="text-4xl md:text-6xl font-serif font-medium tracking-tight text-stone-50">{item.title}</h3>
                 </div>
                 
-                <div className="prose prose-invert prose-stone text-stone-400 text-sm font-light leading-relaxed">
-                    <p>{item.story}</p>
+                <div className="border-l-2 border-stone-700 pl-8 text-stone-300 text-base font-light leading-relaxed tracking-wide opacity-90 italic">
+                    <p className="mb-4">{item.story1}</p>
+                    {item.story2 && <p className="mb-4">{item.story2}</p>}
+                    {item.story3 && <p className="mb-4">{item.story3}</p>}
                 </div>
                 
                 {/* Gallery Miniatures */}
                 {item.galleryImages && item.galleryImages.length > 0 && (
-                    <GalleryRow images={item.galleryImages} onSelect={setCurrentImage} />
+                    <div className="pt-4">
+                        <p className="text-[10px] font-medium tracking-[0.3em] uppercase text-stone-600 mb-4 italic">Extended Gallery</p>
+                        <GalleryRow images={item.galleryImages} onSelect={setCurrentImage} />
+                    </div>
                 )}
             </div>
 

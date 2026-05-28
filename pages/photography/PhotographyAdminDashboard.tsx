@@ -19,9 +19,11 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
   const [isUploading, setIsUploading] = useState(false);
   
   // Library State
-  const [newLibItem, setNewLibItem] = useState({ title: '', story: '' });
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [newLibItem, setNewLibItem] = useState({ title: '', story1: '', story2: '', story3: '' });
   const [libPrimaryFile, setLibPrimaryFile] = useState<File | null>(null);
   const [libGalleryFiles, setLibGalleryFiles] = useState<FileList | null>(null);
+  const [existingGalleryImages, setExistingGalleryImages] = useState<string[]>([]);
 
   // Social Link State
   const [newSocialUrl, setNewSocialUrl] = useState('');
@@ -239,39 +241,57 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
       }
   };
 
-  const handleAddLibraryItem = async () => {
+  const handleSaveLibraryItem = async () => {
       if (!newLibItem.title) return;
       setIsUploading(true);
-      setMsg('Uploading library assets...');
+      setMsg(selectedItemId ? 'Updating library item...' : 'Uploading library assets...');
       try {
-          let primaryUrl = '';
-          if (libPrimaryFile) {
-              primaryUrl = await dbUploadFile(libPrimaryFile, 'media', 'photography/library/');
-          }
+          let primaryUrl = libPrimaryFile ? await dbUploadFile(libPrimaryFile, 'media', 'photography/library/') : (selectedItemId ? library.find(item => item.id === selectedItemId)?.primaryImage : '');
 
-          let galleryUrls: string[] = [];
+          let newGalleryUrls: string[] = [];
           if (libGalleryFiles && libGalleryFiles.length > 0) {
               const uploadPromises = Array.from(libGalleryFiles).map(file => dbUploadFile(file, 'media', 'photography/library/gallery/'));
-              galleryUrls = await Promise.all(uploadPromises);
+              newGalleryUrls = await Promise.all(uploadPromises);
           }
+          
+          const galleryUrls = [...existingGalleryImages, ...newGalleryUrls];
 
-          await dbAddItem('photo_library', {
+          const itemData = {
               title: newLibItem.title,
-              story: newLibItem.story,
+              story1: newLibItem.story1,
+              story2: newLibItem.story2,
+              story3: newLibItem.story3,
               primaryImage: primaryUrl,
               galleryImages: galleryUrls
-          });
-          setNewLibItem({ title: '', story: '' });
+          };
+
+          if (selectedItemId) {
+              await dbUpdateItem('photo_library', { ...itemData, id: selectedItemId });
+              setMsg('Library item updated successfully!');
+          } else {
+              await dbAddItem('photo_library', itemData);
+              setMsg('Library item added successfully!');
+          }
+
+          setNewLibItem({ title: '', story1: '', story2: '', story3: '' });
           setLibPrimaryFile(null);
           setLibGalleryFiles(null);
-          setMsg('Library item added successfully!');
+          setExistingGalleryImages([]);
+          setSelectedItemId(null);
           setTimeout(() => setMsg(''), 2000);
       } catch (e) {
           console.error(e);
-          setMsg('Error adding library item.');
+          setMsg('Error processing library item.');
       } finally {
           setIsUploading(false);
       }
+  }
+
+  const startEditItem = (item: any) => {
+      setNewLibItem({ title: item.title, story1: item.story1 || '', story2: item.story2 || '', story3: item.story3 || '' });
+      setExistingGalleryImages(item.galleryImages || []);
+      setSelectedItemId(item.id);
+      window.scrollTo({ top: 300, behavior: 'smooth' });
   }
 
   const handleDeleteSub = async (col: any, id: string) => {
@@ -346,159 +366,113 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
 
             {/* Settings Tab */}
             {activeTab === 'settings' && (
-                <div className="space-y-8">
-                    <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                        <h2 className="text-xl font-bold tracking-tight text-white drop-shadow-md">Core Content</h2>
-                        <button onClick={handleSaveSettings} className="bg-stone-200 text-black px-6 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-white transition shadow-xl">Store Changes</button>
+                <div className="space-y-12">
+                    <div className="flex justify-between items-center border-b border-white/10 pb-6">
+                        <h2 className="text-2xl font-serif font-bold text-white tracking-tight">Studio Fundamentals</h2>
+                        <button onClick={handleSaveSettings} className="bg-white text-black px-6 py-2 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-stone-200 transition">Save Updates</button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Text Fields */}
-                        <div className="space-y-5">
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Company Name</label>
-                                <input className={inputClass} value={settings.companyName || ''} onChange={e => setSettings({...settings, companyName: e.target.value})} placeholder="Studio Name" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">WhatsApp Integration</label>
-                                <input className={inputClass} value={settings.whatsAppNumber || ''} onChange={e => setSettings({...settings, whatsAppNumber: e.target.value})} placeholder="+1234567890" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Support Email</label>
-                                <input className={inputClass} type="email" value={settings.email || ''} onChange={e => setSettings({...settings, email: e.target.value})} placeholder="Email" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Studio Phone</label>
-                                <input className={inputClass} type="tel" value={settings.phone || ''} onChange={e => setSettings({...settings, phone: e.target.value})} placeholder="Landline / Direct" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Physical Address</label>
-                                <textarea className={inputClass} rows={2} value={settings.address || ''} onChange={e => setSettings({...settings, address: e.target.value})} placeholder="Address" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Opening Times</label>
-                                <textarea className={inputClass} rows={2} value={settings.openingTimes || ''} onChange={e => setSettings({...settings, openingTimes: e.target.value})} placeholder="Mon - Fri: 9am - 5pm" />
-                            </div>
-                            <div className="pt-4 border-t border-white/5">
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Hero Title</label>
-                                <input className={inputClass} value={settings.hero?.title || ''} onChange={e => setSettings({...settings, hero: {...(settings.hero||{}), title: e.target.value}})} placeholder="Capturing The Moment" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Hero Subtitle</label>
-                                <textarea className={inputClass} rows={2} value={settings.hero?.subtitle || ''} onChange={e => setSettings({...settings, hero: {...(settings.hero||{}), subtitle: e.target.value}})} placeholder="We specialize in professional photography..."></textarea>
-                            </div>
-                            <div className="pt-4 border-t border-white/5">
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">About Story (Paragraph 1)</label>
-                                <textarea className={inputClass} rows={2} value={settings.about?.story_p1 || ''} onChange={e => setSettings({...settings, about: {...(settings.about||{}), story_p1: e.target.value}})} placeholder="I believe that every picture tells a story..."></textarea>
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">About Story (Paragraph 2)</label>
-                                <textarea className={inputClass} rows={2} value={settings.about?.story_p2 || ''} onChange={e => setSettings({...settings, about: {...(settings.about||{}), story_p2: e.target.value}})} placeholder="Whether it's a wedding..."></textarea>
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">About Story (Paragraph 3)</label>
-                                <textarea className={inputClass} rows={2} value={settings.about?.story_p3 || ''} onChange={e => setSettings({...settings, about: {...(settings.about||{}), story_p3: e.target.value}})} placeholder="I utilize state-of-the-art equipment..."></textarea>
-                            </div>
-                            <div className="pt-4 border-t border-white/5">
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Banking Settings</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <input className={inputClass} value={settings.bankName || ''} onChange={e => setSettings({...settings, bankName: e.target.value})} placeholder="Bank" />
-                                    <input className={inputClass} value={settings.accountNumber || ''} onChange={e => setSettings({...settings, accountNumber: e.target.value})} placeholder="Acc Numb." />
-                                    <input className={inputClass} value={settings.branchCode || ''} onChange={e => setSettings({...settings, branchCode: e.target.value})} placeholder="Code" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* File Uploads */}
-                        <div className="space-y-6 bg-[#161616] p-6 rounded-2xl border border-white/5 shadow-inner">
-                            <h3 className="font-bold text-[10px] uppercase tracking-widest text-stone-400 mb-2 border-b border-white/5 pb-2">Media Assets</h3>
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Brand Emblem</label>
-                                <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'logoUrl')} className="block w-full text-xs file:mr-4 file:py-2.5 file:px-6 file:rounded-xl file:border-0 file:text-[10px] file:uppercase file:font-semibold file:bg-[#222222] file:text-stone-300 hover:file:bg-[#2a2a2a] transition cursor-pointer text-stone-500 mb-2 border border-white/5 bg-[#121212] rounded-xl shadow-inner focus:outline-none" />
-                                {settings.logoUrl && <img src={settings.logoUrl} alt="Logo Prev" className="h-10 mt-2 rounded-lg bg-[#0a0a0a] object-contain p-1 border border-white/10" />}
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Hero BG Layers (Images/Videos)</label>
-                                <input type="file" accept="image/*,video/mp4,video/webm" multiple onChange={handleHeroBgUpload} className="block w-full text-xs file:mr-4 file:py-2.5 file:px-6 file:rounded-xl file:border-0 file:text-[10px] file:uppercase file:font-semibold file:bg-[#222222] file:text-stone-300 hover:file:bg-[#2a2a2a] transition cursor-pointer text-stone-500 mb-2 border border-white/5 bg-[#121212] rounded-xl shadow-inner focus:outline-none" />
-                                {settings.heroBgUrls && settings.heroBgUrls.length > 0 ? (
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                                        {settings.heroBgUrls.map((url: string, idx: number) => {
-                                            const isVideo = url.match(/\.(mp4|webm|ogg)$/i);
-                                            return (
-                                              <div key={idx} className="relative group rounded-lg overflow-hidden border border-white/10 aspect-video bg-black">
-                                                  {isVideo ? (
-                                                      <video src={url} className="w-full h-full object-cover opacity-70" />
-                                                  ) : (
-                                                      <img src={url} className="w-full h-full object-cover opacity-70" />
-                                                  )}
-                                                  <button
-                                                      onClick={() => {
-                                                          const newUrls = settings.heroBgUrls.filter((_: any, i: number) => i !== idx);
-                                                          setSettings({ ...settings, heroBgUrls: newUrls });
-                                                      }}
-                                                      className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-500 text-white p-1 rounded backdrop-blur-md opacity-0 group-hover:opacity-100 transition"
-                                                  >
-                                                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                                                  </button>
-                                              </div>
-                                            );
-                                        })}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Essential Config */}
+                        <div className="lg:col-span-2 space-y-8">
+                            <section className="bg-[#121212] p-6 rounded-2xl border border-white/5 shadow-sm">
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 mb-6 italic">Hero Section</h3>                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="md:col-span-2">
+                                        <label className="block text-[9px] font-bold uppercase tracking-widest text-stone-600 mb-1.5 ml-1">Hero Title</label>
+                                        <input className={inputClass} value={settings.hero?.title || ''} onChange={e => setSettings({...settings, hero: {...(settings.hero||{}), title: e.target.value}})} placeholder="Capturing The Moment" />
                                     </div>
-                                ) : settings.heroBgUrl ? (
-                                    <div className="mt-2 text-[10px] truncate max-w-sm font-mono bg-[#0a0a0a] p-2 rounded-lg border border-white/10 text-stone-400">{settings.heroBgUrl}</div>
-                                ) : null}
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">About Us Reference</label>
-                                <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'aboutUsImageUrl')} className="block w-full text-xs file:mr-4 file:py-2.5 file:px-6 file:rounded-xl file:border-0 file:text-[10px] file:uppercase file:font-semibold file:bg-[#222222] file:text-stone-300 hover:file:bg-[#2a2a2a] transition cursor-pointer text-stone-500 mb-2 border border-white/5 bg-[#121212] rounded-xl shadow-inner focus:outline-none" />
-                                {settings.aboutUsImageUrl && <img src={settings.aboutUsImageUrl} alt="About Prev" className="h-16 mt-2 rounded-xl object-cover border border-white/10 shadow-md" />}
-                            </div>
-                        </div>
-
-                        {/* Social Links Manager */}
-                        <div className="md:col-span-2 space-y-6 bg-[#161616] p-6 rounded-2xl border border-white/5 shadow-inner mt-4">
-                            <h3 className="font-bold text-[10px] uppercase tracking-widest text-stone-400 border-b border-white/5 pb-2">Social Hub</h3>
-                            
-                            <div className="flex flex-col md:flex-row gap-4 items-end">
-                                <div className="flex-1">
-                                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Target End</label>
-                                    <input className={inputClass} placeholder="https://instagram.com/..." value={newSocialUrl} onChange={e => setNewSocialUrl(e.target.value)} />
-                                </div>
-                                <div className="md:w-64">
-                                    <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Icon Vector (PNG)</label>
-                                    <input type="file" accept="image/*" onChange={e => setNewSocialIcon(e.target.files?.[0] || null)} className="block w-full text-xs file:mr-2 file:py-2 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:uppercase file:font-semibold file:bg-stone-800 file:text-stone-300 hover:file:bg-stone-700 transition cursor-pointer bg-[#0a0a0a] border border-white/10 rounded-xl h-[46px] p-1 text-stone-500" />
-                                </div>
-                                <button onClick={handleAddSocialLink} disabled={isUploading || !newSocialUrl || !newSocialIcon} className="bg-stone-200 text-black px-6 h-[46px] rounded-xl font-bold text-[10px] uppercase tracking-widest disabled:opacity-50 hover:bg-white transition shadow-lg">Link</button>
-                            </div>
-
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-                                {(settings.socialLinks || []).map((link: any) => (
-                                    <div key={link.id} className="bg-[#121212] border border-white/10 p-3 rounded-xl flex items-center justify-between shadow-sm">
-                                        <div className="flex items-center gap-3 overflow-hidden">
-                                            <div className="p-1.5 bg-[#1a1a1a] rounded-lg border border-white/5">
-                                            <img src={link.icon} alt="social" className="w-4 h-4 object-contain filter grayscale invert opacity-70" />
+                                    <div className="md:col-span-2">
+                                        <label className="block text-[9px] font-bold uppercase tracking-widest text-stone-600 mb-1.5 ml-1">Hero Subtitle</label>
+                                        <textarea className={inputClass} rows={2} value={settings.hero?.subtitle || ''} onChange={e => setSettings({...settings, hero: {...(settings.hero||{}), subtitle: e.target.value}})} placeholder="We specialize in professional photography..." />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-[9px] font-bold uppercase tracking-widest text-stone-600 mb-2">Background Layers (Multi-Upload)</label>
+                                        <input type="file" accept="image/*,video/mp4,video/webm" multiple onChange={handleHeroBgUpload} className="block w-full text-[10px] file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[9px] file:uppercase file:font-bold file:bg-stone-800 file:text-stone-300 text-stone-500 custom-file-input cursor-pointer" />
+                                        <p className="text-[9px] text-stone-600 mt-2">Upload multiple images or videos for the hero background.</p>
+                                        
+                                        {/* Hero Background Preview Grid */}
+                                        {settings.heroBgUrls && settings.heroBgUrls.length > 0 && (
+                                            <div className="grid grid-cols-3 md:grid-cols-4 gap-3 mt-4">
+                                                {settings.heroBgUrls.map((url: string, idx: number) => (
+                                                    <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border border-white/10 bg-black group">
+                                                        {url.match(/\.(mp4|webm|ogg)$/i) ? (
+                                                            <video src={url} className="w-full h-full object-cover" muted />
+                                                        ) : (
+                                                            <img src={url} className="w-full h-full object-cover" alt="Hero background layer" />
+                                                        )}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                const newUrls = settings.heroBgUrls.filter((_: any, i: number) => i !== idx);
+                                                                setSettings({ ...settings, heroBgUrls: newUrls });
+                                                            }}
+                                                            className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-red-900 rounded-full text-white opacity-0 group-hover:opacity-100 transition"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                                        </button>
+                                                    </div>
+                                                ))}
                                             </div>
-                                            <span className="text-[10px] text-stone-400 truncate tracking-wide">{link.url.replace('https://', '')}</span>
-                                        </div>
-                                        <button onClick={() => handleDeleteSocialLink(link.id)} className="text-red-400 hover:text-red-300 p-1"><TrashIcon className="w-4 h-4" /></button>
+                                        )}
                                     </div>
-                                ))}
-                            </div>
-                        </div>
-                        
-                        {/* Danger Zone */}
-                        <div className="md:col-span-2 space-y-6 bg-red-950/20 p-6 rounded-2xl border border-red-900/30 shadow-inner mt-8">
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                                <div>
-                                    <h3 className="font-bold text-[10px] uppercase tracking-widest text-red-500 mb-2">Danger Zone</h3>
-                                    <p className="text-xs text-stone-400">Permanently delete all photography data, library assets, bookings, and configuration settings. Start entirely from a clean slate.</p>
                                 </div>
-                                <button onClick={handleWipePhotographyData} className="shrink-0 bg-red-900 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition shadow-lg">
-                                    Wipe Photography Workspace
-                                </button>
-                            </div>
+                            </section>
+                            <section className="bg-[#121212] p-6 rounded-2xl border border-white/5 shadow-sm">
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 mb-6 italic">Core Identity & Contact</h3>                
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="md:col-span-2">
+                                        <label className="block text-[9px] font-bold uppercase tracking-widest text-stone-600 mb-1.5 ml-1">Company Name</label>
+                                        <input className={inputClass} value={settings.companyName || ''} onChange={e => setSettings({...settings, companyName: e.target.value})} placeholder="Studio Name" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[9px] font-bold uppercase tracking-widest text-stone-600 mb-1.5 ml-1">WhatsApp</label>
+                                        <input className={inputClass} value={settings.whatsAppNumber || ''} onChange={e => setSettings({...settings, whatsAppNumber: e.target.value})} placeholder="+1234567890" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[9px] font-bold uppercase tracking-widest text-stone-600 mb-1.5 ml-1">Support Email</label>
+                                        <input className={inputClass} type="email" value={settings.email || ''} onChange={e => setSettings({...settings, email: e.target.value})} placeholder="Email" />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-[9px] font-bold uppercase tracking-widest text-stone-600 mb-1.5 ml-1">Address</label>
+                                        <textarea className={inputClass} rows={2} value={settings.address || ''} onChange={e => setSettings({...settings, address: e.target.value})} placeholder="Address" />
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="bg-[#121212] p-6 rounded-2xl border border-white/5 shadow-sm">
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 mb-6 italic">Brand Story</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-[9px] font-bold uppercase tracking-widest text-stone-600 mb-1.5 ml-1">Editorial P1</label>
+                                        <textarea className={inputClass} rows={2} value={settings.about?.story_p1 || ''} onChange={e => setSettings({...settings, about: {...(settings.about||{}), story_p1: e.target.value}})} placeholder="I believe that every picture tells a story..."></textarea>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[9px] font-bold uppercase tracking-widest text-stone-600 mb-1.5 ml-1">Editorial P2</label>
+                                        <textarea className={inputClass} rows={2} value={settings.about?.story_p2 || ''} onChange={e => setSettings({...settings, about: {...(settings.about||{}), story_p2: e.target.value}})} placeholder="Whether it's a wedding..."></textarea>
+                                    </div>
+                                </div>
+                            </section>
                         </div>
 
+                        {/* Assets Panel */}
+                        <div className="space-y-6">
+                            <section className="bg-[#121212] p-6 rounded-2xl border border-white/5 shadow-sm">
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500 mb-6 italic">Brand Assets</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-[9px] font-bold uppercase tracking-widest text-stone-600 mb-2">Primary Logo</label>
+                                        <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'logoUrl')} className="block w-full text-[10px] file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[9px] file:uppercase file:font-bold file:bg-stone-800 file:text-stone-300 text-stone-500 custom-file-input cursor-pointer" />
+                                        {settings.logoUrl && <img src={settings.logoUrl} alt="Logo" className="mt-2 h-10 w-auto rounded border border-white/10" />}
+                                    </div>
+                                    <div>
+                                        <label className="block text-[9px] font-bold uppercase tracking-widest text-stone-600 mb-2">About Us Reference Image</label>
+                                        <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'aboutUsImageUrl')} className="block w-full text-[10px] file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[9px] file:uppercase file:font-bold file:bg-stone-800 file:text-stone-300 text-stone-500 custom-file-input cursor-pointer" />
+                                        {settings.aboutUsImageUrl && <img src={settings.aboutUsImageUrl} alt="About" className="mt-2 h-20 w-auto rounded border border-white/10" />}
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
                     </div>
                 </div>
             )}
@@ -638,7 +612,9 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
                             
                             <div><label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Cover (1 Asset)</label><input type="file" accept="image/*,video/mp4" onChange={(e) => setLibPrimaryFile(e.target.files?.[0] || null)} className="block w-full text-xs file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-stone-800 file:text-stone-300 hover:file:bg-stone-700 transition cursor-pointer bg-[#0a0a0a] border border-white/10 rounded-xl h-[46px] p-1 text-stone-500" /></div>
                             
-                            <div className="md:col-span-2"><label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Editorial Note</label><textarea className={inputClass} rows={3} value={newLibItem.story} onChange={e => setNewLibItem({...newLibItem, story: e.target.value})} placeholder="Describe context..."></textarea></div>
+                            <div className="md:col-span-2"><label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Editorial Note P1</label><textarea className={inputClass} rows={2} value={newLibItem.story1} onChange={e => setNewLibItem({...newLibItem, story1: e.target.value})} placeholder="Paragraph 1..."></textarea></div>
+                            <div className="md:col-span-2"><label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Editorial Note P2</label><textarea className={inputClass} rows={2} value={newLibItem.story2} onChange={e => setNewLibItem({...newLibItem, story2: e.target.value})} placeholder="Paragraph 2..."></textarea></div>
+                            <div className="md:col-span-2"><label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Editorial Note P3</label><textarea className={inputClass} rows={2} value={newLibItem.story3} onChange={e => setNewLibItem({...newLibItem, story3: e.target.value})} placeholder="Paragraph 3..."></textarea></div>
                             
                             <div className="md:col-span-2">
                                 <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Gallery Payload (Multiple)</label>
@@ -647,8 +623,8 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
                             </div>
                         </div>
                         <div className="mt-6 flex justify-end">
-                            <button onClick={handleAddLibraryItem} disabled={isUploading} className="bg-stone-200 text-black px-8 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition hover:bg-white disabled:opacity-50 shadow-lg">
-                                {isUploading ? 'Transferring...' : 'Publish Vector'}
+                            <button onClick={handleSaveLibraryItem} disabled={isUploading} className="bg-stone-200 text-black px-8 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition hover:bg-white disabled:opacity-50 shadow-lg">
+                                {isUploading ? 'Transferring...' : (selectedItemId ? 'Update Vector' : 'Publish Vector')}
                             </button>
                         </div>
                     </div>
@@ -672,16 +648,21 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
                                         )}
                                         <div>
                                             <h4 className="font-bold text-base text-stone-200">{item.title}</h4>
-                                            <p className="text-xs text-stone-500 line-clamp-2 max-w-lg mt-1 font-light">{item.story}</p>
+                                            <p className="text-xs text-stone-500 line-clamp-2 max-w-lg mt-1 font-light">{item.story1}</p>
                                             <div className="flex gap-2 mt-2">
                                                 <span className="text-[10px] uppercase tracking-widest font-bold bg-[#1a1a1a] border border-white/5 px-2 py-1 rounded-md text-stone-400">{item.galleryImages?.length || 0} Traces</span>
                                             </div>
                                         </div>
                                     </div>
                                     
-                                    <button onClick={() => handleDeleteSub('photo_library', item.id)} className="shrink-0 text-red-500 hover:text-red-400 border border-red-500/20 bg-red-950/20 hover:bg-red-950/40 p-2.5 rounded-xl transition" title="Purge Record">
-                                        <TrashIcon className="w-4 h-4" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => startEditItem(item)} className="shrink-0 text-stone-300 hover:text-white border border-white/10 bg-white/5 hover:bg-white/10 p-2.5 rounded-xl transition" title="Edit Record">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                                        </button>
+                                        <button onClick={() => handleDeleteSub('photo_library', item.id)} className="shrink-0 text-red-500 hover:text-red-400 border border-red-500/20 bg-red-950/20 hover:bg-red-950/40 p-2.5 rounded-xl transition" title="Purge Record">
+                                            <TrashIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             ))
                         )}
