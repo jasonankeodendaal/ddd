@@ -32,10 +32,51 @@ const GalleryRow: React.FC<{ images: string[], onSelect: (img: string) => void }
     )
 }
 
+const LibraryItem: React.FC<{ item: any, index: number }> = ({ item, index }) => {
+    const [currentImage, setCurrentImage] = useState(item.primaryImage);
+    const [isFullScreen, setIsFullScreen] = useState(false);
+
+    return (
+        <div className={`flex flex-col ${index % 2 !== 0 ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-8 md:gap-16 py-8 border-b border-white/5 last:border-0`}>
+            {/* Primary Image Cover */}
+            <div className="w-full md:w-2/5 shrink-0">
+                {currentImage ? (
+                    <div className="relative group w-full cursor-pointer" onClick={() => setIsFullScreen(true)}>
+                        <div className="absolute inset-0 bg-stone-900/10 group-hover:bg-transparent transition duration-500 z-10 pointer-events-none"></div>
+                        <img src={currentImage} alt={item.title} className="w-full h-auto aspect-[3/4] object-cover transition duration-1000 ease-out shadow-2xl rounded-2xl" />
+                    </div>
+                ) : (
+                    <div className="w-full aspect-[3/4] bg-neutral-900 border border-white/5 flex items-center justify-center rounded-2xl">
+                        <span className="text-stone-600 text-xs tracking-widest uppercase">No Image</span>
+                    </div>
+                )}
+            </div>
+            
+            {/* Story & Details */}
+            <div className="w-full md:w-3/5 space-y-4">
+                <div className="space-y-1">
+                    <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-stone-500">Editorial</p>
+                    <h3 className="text-3xl md:text-4xl font-black tracking-tighter text-stone-200 drop-shadow-sm">{item.title}</h3>
+                </div>
+                
+                <div className="prose prose-invert prose-stone text-stone-400 font-light leading-relaxed">
+                    <p>{item.story}</p>
+                </div>
+                
+                {/* Gallery Miniatures */}
+                {item.galleryImages && item.galleryImages.length > 0 && (
+                    <GalleryRow images={item.galleryImages} onSelect={setCurrentImage} />
+                )}
+            </div>
+
+            {isFullScreen && <FullScreenImageViewer src={currentImage} alt={item.title} onClose={() => setIsFullScreen(false)} />}
+        </div>
+    )
+}
+
 const PhotographyLibrary: React.FC<{ settings: any }> = ({ settings }) => {
   const [libraryData, setLibraryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     const unsub = dbSubscribeToCollection('photo_library', (data) => {
@@ -67,43 +108,10 @@ const PhotographyLibrary: React.FC<{ settings: any }> = ({ settings }) => {
         ) : (
             <div className="space-y-16">
                 {libraryData.map((item, index) => (
-                    <div key={item.id} className={`flex flex-col ${index % 2 !== 0 ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-8 md:gap-16 py-8 border-b border-white/5 last:border-0`}>
-                        {/* Primary Image Cover */}
-                        <div className="w-full md:w-2/5 shrink-0">
-                            {item.primaryImage ? (
-                                <div className="relative group w-full">
-                                    <div className="absolute inset-0 bg-stone-900/10 group-hover:bg-transparent transition duration-500 z-10 pointer-events-none"></div>
-                                    <img src={item.primaryImage} alt={item.title} className="w-full h-auto aspect-[3/4] object-cover transition duration-1000 ease-out shadow-2xl rounded-2xl" />
-                                </div>
-                            ) : (
-                                <div className="w-full aspect-[3/4] bg-neutral-900 border border-white/5 flex items-center justify-center rounded-2xl">
-                                    <span className="text-stone-600 text-xs tracking-widest uppercase">No Image</span>
-                                </div>
-                            )}
-                        </div>
-                        
-                        {/* Story & Details */}
-                        <div className="w-full md:w-3/5 space-y-4">
-                            <div className="space-y-1">
-                               <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-stone-500">Editorial</p>
-                               <h3 className="text-3xl md:text-4xl font-black tracking-tighter text-stone-200 drop-shadow-sm">{item.title}</h3>
-                            </div>
-                            
-                            <div className="prose prose-invert prose-stone text-stone-400 font-light leading-relaxed">
-                                <p>{item.story}</p>
-                            </div>
-                            
-                            {/* Gallery Miniatures */}
-                            {item.galleryImages && item.galleryImages.length > 0 && (
-                                <GalleryRow images={item.galleryImages} onSelect={setSelectedImage} />
-                            )}
-                        </div>
-                    </div>
+                    <LibraryItem key={item.id} item={item} index={index} />
                 ))}
             </div>
         )}
-        
-        {selectedImage && <FullScreenImageViewer src={selectedImage} alt="Gallery view" onClose={() => setSelectedImage(null)} />}
     </div>
   );
 };
