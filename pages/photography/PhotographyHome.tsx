@@ -39,7 +39,7 @@ const PhotographyHome: React.FC<{ settings: any }> = ({ settings }) => {
                 className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${idx === currentImageIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
               >
                 <div className="absolute inset-0 bg-black/40 z-10 mix-blend-multiply"></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent z-10"></div>
+                <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#0a0a0a] to-transparent z-10"></div>
                 {isVideo ? (
                     <video src={img} autoPlay muted loop playsInline className="w-full h-full object-cover grayscale-[30%]" />
                 ) : (

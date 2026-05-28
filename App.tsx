@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { 
   dbOnAuthStateChange, 
   dbSubscribeToCollection, 
@@ -308,6 +309,17 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<'home' | 'admin' | 'photography' | 'photography_admin'>('home');
   const [isIntroVisible, setIsIntroVisible] = useState(true);
   
+  const location = useLocation();
+  const nav = useNavigate();
+
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/' || path === '/boshome') setCurrentView('home');
+    else if (path === '/magicalmemories' || path.startsWith('/magicalmemories/')) setCurrentView('photography');
+    else if (path === '/magicalmemories_admin') setCurrentView('photography_admin');
+    else if (path === '/admin') setCurrentView('admin');
+  }, [location]);
+
   // --- DYNAMIC BRANDING EFFECT ---
   useEffect(() => {
     if (settings.companyName) {
@@ -513,12 +525,126 @@ const App: React.FC = () => {
     setIsIntroVisible(false);
   };
 
-  const navigate = (view: 'home' | 'admin' | 'photography' | 'photography_admin') => setCurrentView(view);
+  const PhotographyView = () => (
+      <Routes>
+          <Route path="/" element={<Navigate to="/magicalmemories/home" replace />} />
+          <Route path="home" element={<PhotographyApp view="home" onNavigateHome={() => nav('/')} onNavigateAdmin={() => nav('/magicalmemories_admin')} />} />
+          <Route path="library" element={<PhotographyApp view="library" onNavigateHome={() => nav('/')} onNavigateAdmin={() => nav('/magicalmemories_admin')} />} />
+          <Route path="booking" element={<PhotographyApp view="booking" onNavigateHome={() => nav('/')} onNavigateAdmin={() => nav('/magicalmemories_admin')} />} />
+      </Routes>
+  );
+
+  const PhotographyAdminView = () => {
+    if (!user) {
+        return <AdminLoginPage onNavigate={(view) => nav(view === 'home' ? '/' : `/${view}`)} logoUrl={settings.logoUrl} />;
+    }
+    return <PhotographyAdminDashboard user={user} onNavigate={(view) => {
+        if(view === 'home') nav('/');
+        else if(view.startsWith('magicalmemories')) nav(`/${view}`);
+        else nav(`/${view}`);
+    }} />;
+  };
+
+  const AdminView = () => (
+      <AdminPage
+        user={user}
+        onNavigate={(view) => nav(view === 'home' ? '/' : `/${view}`)}
+        portfolioData={portfolioData}
+        onAddPortfolioItem={handleAddPortfolioItem}
+        onUpdatePortfolioItem={handleUpdatePortfolioItem}
+        onDeletePortfolioItem={handleDeletePortfolioItem}
+        specialsData={specialsData}
+        onAddSpecialItem={handleAddSpecialItem}
+        onUpdateSpecialItem={handleUpdateSpecialItem}
+        onDeleteSpecialItem={handleDeleteSpecialItem}
+        showroomData={showroomData}
+        onAddShowroomGenre={handleAddShowroomGenre}
+        onUpdateShowroomGenre={handleUpdateShowroomGenre}
+        onDeleteShowroomGenre={handleDeleteShowroomGenre}
+        bookings={bookings}
+        onUpdateBooking={handleUpdateBooking}
+        onManualAddBooking={handleManualAddBooking}
+        onDeleteBooking={handleDeleteBooking}
+        clients={clients} 
+        onAddClient={handleAddClient} 
+        onUpdateClient={handleUpdateClient} 
+        onDeleteClient={handleDeleteClient} 
+        invoices={invoices}
+        onAddInvoice={handleAddInvoice}
+        onUpdateInvoice={handleUpdateInvoice}
+        onDeleteInvoice={handleDeleteInvoice}
+        onSaveAllSettings={handleSaveAllSettings}
+        onClearAllData={handleClearAllData}
+        onSuccessfulLogout={handleLogoutSuccess}
+        {...settings}
+      />
+  );
 
   const handleLogoutSuccess = async () => {
     await dbLogout();
     setUser(null); 
-    navigate('home');
+    nav('/');
+  };
+
+  const HomeView = () => (
+    <div className="relative">
+      <StaticBosSalonBackground />
+      <div>
+        <Header onNavigate={(view) => nav(view === 'home' ? '/' : `/${view}`)} logoUrl={settings.logoUrl} companyName={settings.companyName} />
+        <main>
+          <Hero 
+            portfolioData={portfolioData} 
+            onNavigate={(view) => nav(view === 'home' ? '/' : `/${view}`)} 
+            heroBgUrl={settings.heroBgUrl}
+            heroVideoUrl={settings.heroVideoUrl}
+            title={settings.hero?.title}
+            subtitle={settings.hero?.subtitle}
+            buttonText={settings.hero?.buttonText}
+            whatsAppNumber={settings.whatsAppNumber}
+          />
+          <SpecialsCollage specials={[]} whatsAppNumber={settings.whatsAppNumber} /> 
+          <WelcomeSection 
+            title={settings.welcome?.title}
+            text={settings.welcome?.text}
+          />
+          <AboutUs 
+            aboutUsImageUrl={settings.aboutUsImageUrl} 
+            title={settings.about?.title}
+            text1={settings.about?.text1}
+            text2={settings.about?.text2}
+          />
+          <SpecialsSection specials={specialsData} onNavigate={(view) => nav(view === 'home' ? '/' : `/${view}`)} whatsAppNumber={settings.whatsAppNumber} />
+          <Showroom 
+            showroomData={showroomData} 
+            showroomTitle={settings.showroomTitle} 
+            showroomDescription={settings.showroomDescription} 
+            whatsAppNumber={settings.whatsAppNumber}
+          />
+          <ContactForm onAddBooking={handleAddBooking} settings={settings} />
+        </main>
+        <Footer
+          companyName={settings.companyName}
+          address={settings.address}
+          phone={settings.phone}
+          email={settings.email}
+          businessHours={settings.businessHours}
+          socialLinks={settings.socialLinks}
+          apkUrl={settings.apkUrl}
+          onNavigate={(view) => nav(view === 'home' ? '/' : `/${view}`)}
+        />
+      </div>
+    </div>
+  );
+
+  const HomeWrapper = () => {
+      const showMaintenance = settings.isMaintenanceMode && !user;
+      if (showMaintenance) {
+        return <MaintenancePage onNavigate={(view) => nav(view === 'home' ? '/' : `/${view}`)} logoUrl={settings.logoUrl} />;
+      }
+      if (isIntroVisible) {
+        return <WelcomeIntro isVisible={isIntroVisible} onEnter={handleEnter} logoUrl={settings.logoUrl} />;
+      }
+      return <HomeView />;
   };
 
   // --- CRUD FUNCTIONS (Adapter Wrappers) ---
@@ -611,115 +737,15 @@ const App: React.FC = () => {
     );
   }
 
-  // Admin and Client Portal views are always accessible if explicitly navigated to
-  if (currentView === 'photography') {
-      return <PhotographyApp onNavigateHome={() => setCurrentView('home')} onNavigateAdmin={() => setCurrentView('photography_admin')} />;
-  }
-
-  if (currentView === 'photography_admin') {
-      if (!user) {
-          return <AdminLoginPage onNavigate={setCurrentView} logoUrl={settings.logoUrl} />;
-      }
-      return <PhotographyAdminDashboard user={user} onNavigate={setCurrentView} />;
-  }
-
-  if (currentView === 'admin') {
-    return (
-      <AdminPage
-        user={user}
-        onNavigate={navigate}
-        portfolioData={portfolioData}
-        onAddPortfolioItem={handleAddPortfolioItem}
-        onUpdatePortfolioItem={handleUpdatePortfolioItem}
-        onDeletePortfolioItem={handleDeletePortfolioItem}
-        specialsData={specialsData}
-        onAddSpecialItem={handleAddSpecialItem}
-        onUpdateSpecialItem={handleUpdateSpecialItem}
-        onDeleteSpecialItem={handleDeleteSpecialItem}
-        showroomData={showroomData}
-        onAddShowroomGenre={handleAddShowroomGenre}
-        onUpdateShowroomGenre={handleUpdateShowroomGenre}
-        onDeleteShowroomGenre={handleDeleteShowroomGenre}
-        bookings={bookings}
-        onUpdateBooking={handleUpdateBooking}
-        onManualAddBooking={handleManualAddBooking}
-        onDeleteBooking={handleDeleteBooking}
-        clients={clients} 
-        onAddClient={handleAddClient} 
-        onUpdateClient={handleUpdateClient} 
-        onDeleteClient={handleDeleteClient} 
-        invoices={invoices}
-        onAddInvoice={handleAddInvoice}
-        onUpdateInvoice={handleUpdateInvoice}
-        onDeleteInvoice={handleDeleteInvoice}
-        onSaveAllSettings={handleSaveAllSettings}
-        onClearAllData={handleClearAllData}
-        onSuccessfulLogout={handleLogoutSuccess}
-        {...settings}
-      />
-    );
-  }
-
-  // Maintenance Mode Logic: Triggered if enabled AND user is NOT an admin (auth user)
-  // This ensures admins can still see the dashboard even if maintenance is on
-  const showMaintenance = settings.isMaintenanceMode && !user;
-
-  if (showMaintenance) {
-    return <MaintenancePage onNavigate={navigate} logoUrl={settings.logoUrl} />;
-  }
-
-  if (isIntroVisible) {
-    return <WelcomeIntro isVisible={isIntroVisible} onEnter={handleEnter} logoUrl={settings.logoUrl} />;
-  }
-  
   return (
-    <div className="relative">
-      <StaticBosSalonBackground />
-      <div>
-        <Header onNavigate={navigate} logoUrl={settings.logoUrl} companyName={settings.companyName} />
-        <main>
-          <Hero 
-            portfolioData={portfolioData} 
-            onNavigate={navigate} 
-            heroBgUrl={settings.heroBgUrl}
-            heroVideoUrl={settings.heroVideoUrl}
-            title={settings.hero?.title}
-            subtitle={settings.hero?.subtitle}
-            buttonText={settings.hero?.buttonText}
-            whatsAppNumber={settings.whatsAppNumber}
-          />
-          <SpecialsCollage specials={[]} whatsAppNumber={settings.whatsAppNumber} /> 
-          <WelcomeSection 
-            title={settings.welcome?.title}
-            text={settings.welcome?.text}
-          />
-          <AboutUs 
-            aboutUsImageUrl={settings.aboutUsImageUrl} 
-            title={settings.about?.title}
-            text1={settings.about?.text1}
-            text2={settings.about?.text2}
-          />
-          <SpecialsSection specials={specialsData} onNavigate={navigate} whatsAppNumber={settings.whatsAppNumber} />
-          <Showroom 
-            showroomData={showroomData} 
-            showroomTitle={settings.showroomTitle} 
-            showroomDescription={settings.showroomDescription} 
-            whatsAppNumber={settings.whatsAppNumber}
-          />
-          <ContactForm onAddBooking={handleAddBooking} settings={settings} />
-        </main>
-        <Footer
-          companyName={settings.companyName}
-          address={settings.address}
-          phone={settings.phone}
-          email={settings.email}
-          businessHours={settings.businessHours}
-          socialLinks={settings.socialLinks}
-          apkUrl={settings.apkUrl}
-          onNavigate={navigate}
-        />
-      </div>
-    </div>
+    <Routes>
+      <Route path="/" element={<HomeWrapper />} />
+      <Route path="/boshome" element={<HomeWrapper />} />
+      <Route path="/magicalmemories/*" element={<PhotographyView />} />
+      <Route path="/magicalmemories_admin" element={<PhotographyAdminView />} />
+      <Route path="/admin" element={<AdminView />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { dbSubscribeToDoc } from '../../utils/dbAdapter';
 
 import PhotographyHome from './PhotographyHome';
@@ -8,12 +9,24 @@ import PhotographyHeader from './PhotographyHeader';
 import PhotographyFooter from './PhotographyFooter';
 
 interface Props {
+  view: 'home' | 'library' | 'booking';
   onNavigateHome: () => void;
   onNavigateAdmin?: () => void;
 }
 
-const PhotographyApp: React.FC<Props> = ({ onNavigateHome, onNavigateAdmin }) => {
-  const [currentView, setCurrentView] = useState<'home' | 'library' | 'booking'>('home');
+const PhotographyApp: React.FC<Props> = ({ view, onNavigateHome, onNavigateAdmin }) => {
+  const navigate = useNavigate();
+  const [currentView, setCurrentView] = useState<'home' | 'library' | 'booking'>(view);
+
+  useEffect(() => {
+    setCurrentView(view);
+  }, [view]);
+
+  const handleNavigate = (newView: 'home' | 'library' | 'booking') => {
+      navigate(`/magicalmemories/${newView}`);
+      setCurrentView(newView);
+  }
+
   const [settings, setSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
 
@@ -113,7 +126,7 @@ const PhotographyApp: React.FC<Props> = ({ onNavigateHome, onNavigateAdmin }) =>
           <PhotographyHeader 
             settings={settings} 
             currentView={currentView} 
-            onNavigate={setCurrentView} 
+            onNavigate={handleNavigate} 
             onNavigateBosSalon={onNavigateHome}
           />
           

@@ -4,6 +4,20 @@ import CreatorModal from '../../components/CreatorModal';
 const PhotographyFooter: React.FC<{ settings: any, onNavigateAdmin?: () => void }> = ({ settings, onNavigateAdmin }) => {
   const [isCreatorModalOpen, setIsCreatorModalOpen] = useState(false);
 
+  const formatPhoneNumber = (phone: string) => {
+    if (!phone) return '';
+    let cleaned = phone.replace(/\s+/g, '');
+    if (cleaned.startsWith('+27')) {
+      cleaned = '0' + cleaned.slice(3);
+    }
+    
+    // Check if it's a 10-digit South African local number now
+    if (cleaned.length === 10 && /^\d+$/.test(cleaned)) {
+      return `(${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)})`;
+    }
+    return phone;
+  };
+
   return (
     <>
       <footer className="w-full border-t border-white/5 bg-[#0d0d0d] relative mt-12 z-10 px-4 py-8 md:py-12">
@@ -25,9 +39,9 @@ const PhotographyFooter: React.FC<{ settings: any, onNavigateAdmin?: () => void 
         <div className="md:col-span-3 space-y-2">
              <h4 className="font-bold text-stone-300 mb-3 uppercase tracking-widest text-[10px]">Reach Out</h4>
              {settings.email && <div className="hover:text-stone-200 transition cursor-pointer">{settings.email}</div>}
-             {settings.phone && <div className="hover:text-stone-200 transition cursor-pointer">{settings.phone}</div>}
+             {settings.phone && <div className="hover:text-stone-200 transition cursor-pointer">{formatPhoneNumber(settings.phone)}</div>}
              {settings.whatsAppNumber && (
-                 <a href={`https://wa.me/${settings.whatsAppNumber.replace(/[^0-9]/g, '')}?text=Hi, I would like to enquire about photography services.`} target="_blank" rel="noopener noreferrer" className="text-stone-300 hover:text-white font-bold block mt-2 border-b border-stone-600 inline-block pb-0.5">Contact via WhatsApp</a>
+                 <a href={`https://wa.me/${settings.whatsAppNumber.replace(/[^0-9]/g, '')}?text=Hi, I would like to enquire about photography services.`} target="_blank" rel="noopener noreferrer" className="text-stone-300 hover:text-white block mt-2">{formatPhoneNumber(settings.whatsAppNumber)}</a>
              )}
         </div>
         

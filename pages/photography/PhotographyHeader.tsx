@@ -18,8 +18,7 @@ const PhotographyHeader: React.FC<Props> = ({ settings, currentView, onNavigate,
   }
 
   return (
-    <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-4xl bg-[#121212]/80 backdrop-blur-xl border border-white/10 text-white rounded-[2rem] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)]">
-      <div className="px-6 h-20 md:h-24 flex items-center justify-between">
+    <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-6 md:px-12 text-white">
         <div className="flex items-center gap-4">
           <a onClick={() => switchView('home')} className="cursor-pointer">
             {settings?.logoUrl ? (
@@ -44,7 +43,6 @@ const PhotographyHeader: React.FC<Props> = ({ settings, currentView, onNavigate,
         <button className="md:hidden p-2 text-stone-300 hover:text-white" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16m-7 6h7" /></svg>
         </button>
-      </div>
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
