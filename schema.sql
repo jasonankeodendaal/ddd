@@ -107,16 +107,46 @@ CREATE POLICY "Authenticated Read" ON public.invoices FOR SELECT USING (auth.rol
 DROP POLICY IF EXISTS "Authenticated Manage" ON public.invoices;
 CREATE POLICY "Authenticated Manage" ON public.invoices FOR ALL USING (auth.role() = 'authenticated');
 
+-- 6.5 Create Expenses and Inventory Tables
+CREATE TABLE IF NOT EXISTS public.expenses (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  date date,
+  category text,
+  description text,
+  amount numeric,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Authenticated Manage Expenses" ON public.expenses;
+CREATE POLICY "Authenticated Manage Expenses" ON public.expenses FOR ALL USING (auth.role() = 'authenticated');
+
+CREATE TABLE IF NOT EXISTS public.inventory (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  "productName" text,
+  brand text,
+  category text,
+  quantity numeric,
+  "minStockLevel" numeric,
+  "unitCost" numeric,
+  supplier text,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Authenticated Manage Inventory" ON public.inventory;
+CREATE POLICY "Authenticated Manage Inventory" ON public.inventory FOR ALL USING (auth.role() = 'authenticated');
+
 -- 7. Create Settings Table
 CREATE TABLE IF NOT EXISTS public.settings (
   id text PRIMARY KEY, -- 'main' for the single document
   "companyName" text,
   "logoUrl" text,
   "heroBgUrl" text,
+  "heroBgUrls" jsonb DEFAULT '[]',
   "heroVideoUrl" text,
   "aboutUsImageUrl" text,
   "whatsAppNumber" text,
   "businessHours" text,
+  "openingTimes" text,
   "address" text,
   "phone" text,
   "email" text,
@@ -152,6 +182,8 @@ CREATE TABLE IF NOT EXISTS public.settings (
 );
 
 ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS "heroVideoUrl" text;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS "heroBgUrls" jsonb DEFAULT '[]';
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS "openingTimes" text;
 ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS "bookingCategories" jsonb DEFAULT '[]';
 
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
@@ -216,3 +248,61 @@ ON CONFLICT (id) DO NOTHING;
 -- You will need to create 'media' bucket in Supabase dashboard manually (publicly readable).
 -- Policy for public read
 -- CREATE POLICY "Public Access" on storage.objects FOR SELECT USING (bucket_id = 'media');
+
+-- 10. Auto-Cleanup Booking Images
+-- Note: pg_cron extension required. Execute the following to schedule a daily cleanup of booking images older than 30 days:
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- 11. Create Photo Invoices Table
+CREATE TABLE IF NOT EXISTS public.photo_invoices (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  type text,
+  clientName text,
+  whatsapp text,
+  email text,
+  date text,
+  items jsonb,
+  subtotal numeric,
+  discount numeric,
+  total numeric,
+  status text,
+  notes text,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+ALTER TABLE public.photo_invoices ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Insert" ON public.photo_invoices;
+CREATE POLICY "Public Insert" ON public.photo_invoices FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Authenticated Read" ON public.photo_invoices;
+CREATE POLICY "Authenticated Read" ON public.photo_invoices FOR SELECT USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Authenticated Manage" ON public.photo_invoices;
+CREATE POLICY "Authenticated Manage" ON public.photo_invoices FOR ALL USING (auth.role() = 'authenticated');
+
+DO $$ 
+BEGIN
+  -- Schedule a daily job at midnight to delete old images
+  PERFORM cron.schedule(
+    'delete_old_booking_images', 
+    '0 0 * * *', 
+    'DELETE FROM storage.objects WHERE bucket_id = ''media'' AND (name LIKE ''booking-refs/%'' OR name LIKE ''booking-references/%'') AND created_at < NOW() - INTERVAL ''30 days'';'
+  );
+EXCEPTION WHEN others THEN
+  -- pg_cron might not be enabled or available in all environments, catch error
+  RAISE NOTICE 'pg_cron scheduling failed: %', SQLERRM;
+END $$;
+
+-- 12. Realtime Subscriptions
+DROP PUBLICATION IF EXISTS supabase_realtime;
+CREATE PUBLICATION supabase_realtime FOR TABLE 
+    public.portfolio, 
+    public.specials, 
+    public.showroom, 
+    public.bookings, 
+    public.settings, 
+    public.invoices,
+    public.clients,
+    public.expenses,
+    public.inventory,
+    public.photo_library,
+    public.photo_bookings,
+    public.photo_invoices;
+

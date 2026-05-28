@@ -81,7 +81,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onAddBooking, settings }) => 
     if (referenceImages.length > 0) {
         try {
             const uploadPromises = referenceImages.map(file => 
-                dbUploadFile(file, 'booking-references')
+                dbUploadFile(file, 'media', 'booking-references/').then(url => `${url}?download=`)
             );
             referenceImageUrls = await Promise.all(uploadPromises);
         } catch (error) {
@@ -111,9 +111,8 @@ Service Options: ${selectedOptions.join(', ')}
 Message: ${message}
 Reference Images: ${referenceImageUrls.join('\n')}`;
     
-    const waNumber = settings.whatsAppNumber || '';
-    const whatsappUrl = `https://wa.me/${waNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(waMessage)}`;
-    window.open(whatsappUrl, '_blank');
+    // Message is saved to DB, no need to open WhatsApp window explicitly
+    // Company can manually contact them from admin dashboard
     
     // Reset form and show success message
     setName('');
@@ -127,7 +126,7 @@ Reference Images: ${referenceImageUrls.join('\n')}`;
     setReferenceImagePreviews([]);
     setErrorMessage('');
     setIsLoading(false);
-    setSuccessMessage('Booking request sent and WhatsApp opened!');
+    setSuccessMessage('Booking request sent successfully! We will contact you soon.');
     setTimeout(() => setSuccessMessage(''), 5000);
   };
 
@@ -285,7 +284,7 @@ Reference Images: ${referenceImageUrls.join('\n')}`;
 
                                 <div>
                                 <button type="submit" disabled={isLoading} className="w-full bg-brand-green text-white py-3 rounded-full font-bold text-lg hover:bg-opacity-90 transition-all duration-300 mt-2 transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                                    {isLoading ? 'Sending...' : 'Book an appointment on WhatsApp'}
+                                    {isLoading ? 'Sending...' : 'Book an appointment'}
                                 </button>
                                 </div>
                             </form>

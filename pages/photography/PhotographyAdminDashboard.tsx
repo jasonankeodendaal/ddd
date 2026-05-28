@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { dbLogout, dbSubscribeToDoc, dbSubscribeToCollection, dbAddItem, dbDeleteItem, dbSetDoc, dbUploadFile } from '../../utils/dbAdapter';
+import { dbLogout, dbSubscribeToDoc, dbSubscribeToCollection, dbAddItem, dbDeleteItem, dbSetDoc, dbUploadFile, dbUpdateItem } from '../../utils/dbAdapter';
 import TrashIcon from '../../components/icons/TrashIcon';
 
 interface Props {
@@ -12,6 +12,8 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
   const [settings, setSettings] = useState<any>({ theme: {} });
   const [library, setLibrary] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [viewingInvoice, setViewingInvoice] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [msg, setMsg] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -44,6 +46,7 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
          }));
          unsubs.push(dbSubscribeToCollection('photo_library', (data) => setLibrary(data)));
          unsubs.push(dbSubscribeToCollection('photo_bookings', (data) => setBookings(data)));
+         unsubs.push(dbSubscribeToCollection('photo_invoices', (data) => setInvoices(data)));
          setIsLoading(false);
      };
      load();
@@ -138,11 +141,29 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
   };
 
   const generateQuote = (booking: any) => {
-      alert(`Simulation: Quote generated for ${booking.clientName} for ${booking.service}.\nA PDF would be sent to ${booking.clientEmail}.`);
+      setViewingInvoice({
+          type: 'quote',
+          clientName: booking.clientName,
+          email: booking.clientEmail,
+          whatsapp: booking.clientPhone,
+          date: new Date().toISOString().split('T')[0],
+          items: [{ description: booking.service, quantity: 1, price: 0 }],
+          status: 'draft',
+          notes: booking.message || ''
+      });
   };
 
   const generateInvoice = (booking: any) => {
-      alert(`Simulation: Invoice generated for ${booking.clientName}.\nTotal due will be sent via payment link to ${booking.clientPhone || booking.clientEmail}.`);
+      setViewingInvoice({
+          type: 'invoice',
+          clientName: booking.clientName,
+          email: booking.clientEmail,
+          whatsapp: booking.clientPhone,
+          date: new Date().toISOString().split('T')[0],
+          items: [{ description: booking.service, quantity: 1, price: 0 }],
+          status: 'draft',
+          notes: booking.message || ''
+      });
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
@@ -163,6 +184,61 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
       }
   };
 
+  const handleHeroBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      setIsUploading(true);
+      setMsg('Uploading hero assets...');
+      try {
+          const newSettings = { ...settings };
+          const urls = newSettings.heroBgUrls || [];
+          
+          const uploadPromises = Array.from(files).map(file => dbUploadFile(file, 'media', 'photography/hero/'));
+          const newUrls = await Promise.all(uploadPromises);
+          urls.push(...newUrls);
+          
+          newSettings.heroBgUrls = urls;
+          setSettings(newSettings);
+          setMsg('Upload successful! Remember to save.');
+      } catch (err: any) {
+          setMsg(err.message || 'Error uploading files');
+      } finally {
+          setIsUploading(false);
+      }
+  };
+
+
+  const handleWipePhotographyData = async () => {
+      if (!window.confirm('ARE YOU SURE? This will delete ALL Photography settings, portfolio items, and bookings. THIS IS IRREVERSIBLE!')) return;
+      setIsUploading(true);
+      setMsg('Wiping photography data...');
+      try {
+          // Reset photography settings
+          await dbSetDoc('settings', 'photography', { theme: {} });
+          
+          // Delete all library items
+          for (const item of library) {
+              await dbDeleteItem('photo_library', item.id);
+          }
+          
+          // Delete all bookings
+          for (const b of bookings) {
+              await dbDeleteItem('photo_bookings', b.id);
+          }
+          
+          setSettings({ theme: {} });
+          setLibrary([]);
+          setBookings([]);
+          
+          setMsg('Wipe successful. All data cleared.');
+          setTimeout(() => setMsg(''), 3000);
+      } catch (err: any) {
+          setMsg(err.message || 'Error wiping data');
+      } finally {
+          setIsUploading(false);
+      }
+  };
+
   const handleAddLibraryItem = async () => {
       if (!newLibItem.title) return;
       setIsUploading(true);
@@ -175,10 +251,8 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
 
           let galleryUrls: string[] = [];
           if (libGalleryFiles && libGalleryFiles.length > 0) {
-              for (let i = 0; i < libGalleryFiles.length; i++) {
-                  const url = await dbUploadFile(libGalleryFiles[i], 'media', 'photography/library/gallery/');
-                  galleryUrls.push(url);
-              }
+              const uploadPromises = Array.from(libGalleryFiles).map(file => dbUploadFile(file, 'media', 'photography/library/gallery/'));
+              galleryUrls = await Promise.all(uploadPromises);
           }
 
           await dbAddItem('photo_library', {
@@ -202,6 +276,9 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
 
   const handleDeleteSub = async (col: any, id: string) => {
       if (confirm('Are you sure?')) {
+          if (col === 'photo_invoices') setInvoices(prev => prev.filter(i => i.id !== id));
+          if (col === 'photo_bookings') setBookings(prev => prev.filter(b => b.id !== id));
+          if (col === 'photo_library') setLibrary(prev => prev.filter(l => l.id !== id));
           await dbDeleteItem(col, id);
       }
   }
@@ -210,6 +287,23 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
   const inputClass = "w-full bg-[#0a0a0a] border border-white/10 rounded-xl p-3 text-sm text-stone-200 focus:ring-1 focus:ring-stone-400 focus:border-stone-400 outline-none transition shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]";
   
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]"><p className="animate-pulse tracking-widest text-sm uppercase text-stone-500 font-bold">Loading Workspace...</p></div>;
+
+  if (viewingInvoice) {
+      return (
+          <PhotographyInvoiceEditor 
+              invoice={viewingInvoice === 'new' ? { type: 'quote', items: [], status: 'draft', date: new Date().toISOString().split('T')[0] } : viewingInvoice} 
+              settings={settings}
+              onClose={() => setViewingInvoice(null)} 
+              onSaveInvoice={(savedInv) => {
+                  setInvoices(prev => {
+                      const exists = prev.find(i => i.id === savedInv.id);
+                      if (exists) return prev.map(i => i.id === savedInv.id ? savedInv : i);
+                      return [savedInv, ...prev];
+                  });
+              }}
+          />
+      );
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-stone-200 font-sans selection:bg-stone-300 selection:text-black">
@@ -237,6 +331,7 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
                 <button className={tabClass('theme')} onClick={() => setActiveTab('theme')}>Design</button>
                 <button className={tabClass('library')} onClick={() => setActiveTab('library')}>Library</button>
                 <button className={tabClass('bookings')} onClick={() => setActiveTab('bookings')}>Bookings</button>
+                <button className={tabClass('invoices')} onClick={() => setActiveTab('invoices')}>Quotes & Invoices</button>
             </div>
 
             {/* Status Notifications */}
@@ -273,8 +368,16 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
                                 <input className={inputClass} type="email" value={settings.email || ''} onChange={e => setSettings({...settings, email: e.target.value})} placeholder="Email" />
                             </div>
                             <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Studio Phone</label>
+                                <input className={inputClass} type="tel" value={settings.phone || ''} onChange={e => setSettings({...settings, phone: e.target.value})} placeholder="Landline / Direct" />
+                            </div>
+                            <div>
                                 <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Physical Address</label>
                                 <textarea className={inputClass} rows={2} value={settings.address || ''} onChange={e => setSettings({...settings, address: e.target.value})} placeholder="Address" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Opening Times</label>
+                                <textarea className={inputClass} rows={2} value={settings.openingTimes || ''} onChange={e => setSettings({...settings, openingTimes: e.target.value})} placeholder="Mon - Fri: 9am - 5pm" />
                             </div>
                             <div className="pt-4 border-t border-white/5">
                                 <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-1.5 ml-1">Hero Title</label>
@@ -315,11 +418,35 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
                                 {settings.logoUrl && <img src={settings.logoUrl} alt="Logo Prev" className="h-10 mt-2 rounded-lg bg-[#0a0a0a] object-contain p-1 border border-white/10" />}
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Hero BG Layer</label>
-                                <input type="file" accept="image/*,video/mp4" onChange={(e) => handleFileUpload(e, 'heroBgUrl')} className="block w-full text-xs file:mr-4 file:py-2.5 file:px-6 file:rounded-xl file:border-0 file:text-[10px] file:uppercase file:font-semibold file:bg-[#222222] file:text-stone-300 hover:file:bg-[#2a2a2a] transition cursor-pointer text-stone-500 mb-2 border border-white/5 bg-[#121212] rounded-xl shadow-inner focus:outline-none" />
-                                {settings.heroBgUrl && (
+                                <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">Hero BG Layers (Images/Videos)</label>
+                                <input type="file" accept="image/*,video/mp4,video/webm" multiple onChange={handleHeroBgUpload} className="block w-full text-xs file:mr-4 file:py-2.5 file:px-6 file:rounded-xl file:border-0 file:text-[10px] file:uppercase file:font-semibold file:bg-[#222222] file:text-stone-300 hover:file:bg-[#2a2a2a] transition cursor-pointer text-stone-500 mb-2 border border-white/5 bg-[#121212] rounded-xl shadow-inner focus:outline-none" />
+                                {settings.heroBgUrls && settings.heroBgUrls.length > 0 ? (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                                        {settings.heroBgUrls.map((url: string, idx: number) => {
+                                            const isVideo = url.match(/\.(mp4|webm|ogg)$/i);
+                                            return (
+                                              <div key={idx} className="relative group rounded-lg overflow-hidden border border-white/10 aspect-video bg-black">
+                                                  {isVideo ? (
+                                                      <video src={url} className="w-full h-full object-cover opacity-70" />
+                                                  ) : (
+                                                      <img src={url} className="w-full h-full object-cover opacity-70" />
+                                                  )}
+                                                  <button
+                                                      onClick={() => {
+                                                          const newUrls = settings.heroBgUrls.filter((_: any, i: number) => i !== idx);
+                                                          setSettings({ ...settings, heroBgUrls: newUrls });
+                                                      }}
+                                                      className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-500 text-white p-1 rounded backdrop-blur-md opacity-0 group-hover:opacity-100 transition"
+                                                  >
+                                                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                                  </button>
+                                              </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : settings.heroBgUrl ? (
                                     <div className="mt-2 text-[10px] truncate max-w-sm font-mono bg-[#0a0a0a] p-2 rounded-lg border border-white/10 text-stone-400">{settings.heroBgUrl}</div>
-                                )}
+                                ) : null}
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-2">About Us Reference</label>
@@ -356,6 +483,19 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
                                         <button onClick={() => handleDeleteSocialLink(link.id)} className="text-red-400 hover:text-red-300 p-1"><TrashIcon className="w-4 h-4" /></button>
                                     </div>
                                 ))}
+                            </div>
+                        </div>
+                        
+                        {/* Danger Zone */}
+                        <div className="md:col-span-2 space-y-6 bg-red-950/20 p-6 rounded-2xl border border-red-900/30 shadow-inner mt-8">
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                                <div>
+                                    <h3 className="font-bold text-[10px] uppercase tracking-widest text-red-500 mb-2">Danger Zone</h3>
+                                    <p className="text-xs text-stone-400">Permanently delete all photography data, library assets, bookings, and configuration settings. Start entirely from a clean slate.</p>
+                                </div>
+                                <button onClick={handleWipePhotographyData} className="shrink-0 bg-red-900 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition shadow-lg">
+                                    Wipe Photography Workspace
+                                </button>
                             </div>
                         </div>
 
@@ -605,6 +745,66 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
                 </div>
             )}
             
+            {/* Invoices Tab */}
+            {activeTab === 'invoices' && (
+                <div className="space-y-8">
+                    <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                        <h2 className="text-xl font-bold tracking-tight text-white drop-shadow-md">Quotes & Invoices</h2>
+                        <button onClick={() => setViewingInvoice('new')} className="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-500 transition shadow-lg">+ New Document</button>
+                    </div>
+
+                    {!invoices.length ? (
+                        <div className="text-center py-20 border border-white/5 bg-[#161616] rounded-2xl shadow-inner">
+                            <TrashIcon className="w-8 h-8 mx-auto text-stone-600 mb-4" />
+                            <p className="text-sm font-medium text-stone-400">No active documents</p>
+                        </div>
+                    ) : (
+                        <div className="bg-[#161616] border border-white/5 rounded-2xl overflow-hidden shadow-xl">
+                            <table className="w-full text-left text-sm whitespace-nowrap">
+                                <thead className="bg-[#0a0a0a] text-stone-500 border-b border-white/5 text-[10px] uppercase tracking-widest font-bold">
+                                    <tr>
+                                        <th className="p-4">Client</th>
+                                        <th className="p-4">Type</th>
+                                        <th className="p-4">Date</th>
+                                        <th className="p-4">Total</th>
+                                        <th className="p-4">Status</th>
+                                        <th className="p-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {invoices.map(inv => (
+                                        <tr key={inv.id} className="hover:bg-white/5 transition text-stone-300">
+                                            <td className="p-4 font-medium">{inv.clientName}</td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest border ${inv.type === 'quote' ? 'bg-indigo-900/30 text-indigo-400 border-indigo-500/20' : 'bg-emerald-900/30 text-emerald-400 border-emerald-500/20'}`}>
+                                                    {inv.type}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 font-mono text-[10px]">{inv.date}</td>
+                                            <td className="p-4">R {inv.total}</td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest border ${
+                                                    inv.status === 'draft' ? 'bg-stone-800 text-stone-400 border-stone-700' :
+                                                    inv.status === 'sent' ? 'bg-blue-900/30 text-blue-400 border-blue-500/20' :
+                                                    inv.status === 'paid' ? 'bg-emerald-900/30 text-emerald-400 border-emerald-500/20' :
+                                                    'bg-red-900/30 text-red-400 border-red-500/20'
+                                                }`}>
+                                                    {inv.status}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-right space-x-2">
+                                                <button onClick={() => setViewingInvoice(inv)} className="text-stone-300 hover:text-white hover:bg-stone-800 font-bold text-[10px] uppercase tracking-widest px-3 py-1.5 rounded disabled:opacity-50 transition border border-white/10">View</button>
+                                                <button onClick={() => handleDeleteSub('photo_invoices', inv.id)} className="text-red-500 hover:bg-red-500/20 p-2 rounded transition"><TrashIcon className="w-4 h-4" /></button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
+            
             </div>
         </main>
     </div>
@@ -612,3 +812,142 @@ const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
 }
 
 export default PhotographyAdminDashboard;
+
+const PhotographyInvoiceEditor: React.FC<{ invoice: any, onClose: () => void, settings: any, onSaveInvoice: (inv: any) => void }> = ({ invoice, onClose, settings, onSaveInvoice }) => {
+    const [inv, setInv] = useState(invoice);
+    const [msg, setMsg] = useState('');
+    
+    const handleSave = async () => {
+        setMsg('Saving...');
+        try {
+            const subtotal = inv.items.reduce((acc: number, cur: any) => acc + (parseFloat(cur.price) || 0) * (parseInt(cur.quantity) || 1), 0);
+            const discount = parseFloat(inv.discount) || 0;
+            const total = subtotal - discount;
+            const finalInv = { ...inv, subtotal, discount, total };
+            
+            let saved;
+            if (finalInv.id) {
+                await dbUpdateItem('photo_invoices', finalInv);
+                saved = finalInv;
+            } else {
+                saved = await dbAddItem('photo_invoices', finalInv);
+            }
+            onSaveInvoice(saved);
+            onClose();
+        } catch (e: any) {
+            setMsg(e.message || 'Error saving');
+        }
+    };
+    
+    return (
+        <div className="min-h-screen bg-[#111111] text-stone-200 p-4 md:p-10 font-sans">
+            <div className="max-w-4xl mx-auto space-y-6">
+                
+                <div className="flex justify-between items-center mb-6">
+                    <button onClick={onClose} className="text-stone-400 hover:text-white uppercase text-[10px] tracking-widest font-bold">← Back to Dashboard</button>
+                    <div className="flex gap-4 items-center">
+                        {msg && <span className="text-emerald-400 text-xs">{msg}</span>}
+                        <button onClick={handleSave} className="bg-stone-200 text-black px-6 py-2 rounded uppercase text-[10px] tracking-widest font-bold hover:bg-white transition">Save Document</button>
+                    </div>
+                </div>
+                
+                <div className="bg-white text-black p-8 md:p-14 rounded shadow-2xl relative">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-stone-100 rounded-bl-[100px] -z-10" />
+                    
+                    <div className="flex flex-col md:flex-row justify-between mb-12">
+                        <div>
+                            {settings.logoUrl ? <div className="bg-black inline-block p-4 rounded-xl mb-4 border border-stone-800"><img src={settings.logoUrl} alt="Logo" className="h-16 object-contain" /></div> : <h1 className="text-3xl font-black mb-4">{settings.companyName || 'Studio'}</h1>}
+                            <p className="text-xs text-stone-500 whitespace-pre-line">{settings.address}</p>
+                            <p className="text-xs text-stone-500">{settings.phone}</p>
+                            <p className="text-xs text-stone-500">{settings.email}</p>
+                        </div>
+                        <div className="text-left md:text-right mt-6 md:mt-0 flex flex-col justify-end space-y-2">
+                            <select value={inv.type} onChange={e => setInv({...inv, type: e.target.value})} className="text-4xl font-light text-stone-300 w-auto text-right bg-transparent border-b border-dashed border-stone-300 focus:border-stone-500 outline-none uppercase tracking-widest pb-2 appearance-none cursor-pointer">
+                                <option value="quote">QUOTE</option>
+                                <option value="invoice">INVOICE</option>
+                            </select>
+                            <div className="flex items-center justify-end gap-2 text-sm mt-4">
+                                <span className="text-stone-400 uppercase tracking-widest text-[10px] font-bold">Status</span>
+                                <select value={inv.status} onChange={e => setInv({...inv, status: e.target.value})} className="bg-stone-100 text-black p-1 border font-bold text-[10px] uppercase tracking-widest rounded outline-none border-stone-200">
+                                    <option value="draft">Draft</option>
+                                    <option value="sent">Sent</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-10 border-t border-b border-stone-200 py-8">
+                        <div>
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-4">Bill To</h3>
+                            <input className="block w-full text-xl font-bold mb-2 outline-none border-b border-dashed border-stone-200 focus:border-stone-400 bg-transparent placeholder-stone-300" placeholder="Client Name" value={inv.clientName || ''} onChange={e => setInv({...inv, clientName: e.target.value})} />
+                            <input className="block w-full text-sm outline-none border-b border-dashed border-stone-200 focus:border-stone-400 bg-transparent placeholder-stone-300 mb-2" placeholder="Email Address" value={inv.email || ''} onChange={e => setInv({...inv, email: e.target.value})} />
+                            <input className="block w-full text-sm outline-none border-b border-dashed border-stone-200 focus:border-stone-400 bg-transparent placeholder-stone-300" placeholder="WhatsApp / Phone" value={inv.whatsapp || ''} onChange={e => setInv({...inv, whatsapp: e.target.value})} />
+                        </div>
+                        <div className="md:text-right">
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-4">Document Details</h3>
+                            <div className="flex md:justify-end items-center gap-4 mb-2">
+                                <span className="text-xs text-stone-500 font-bold uppercase tracking-widest w-16">Date</span>
+                                <input type="date" className="text-sm outline-none border-b border-dashed border-stone-200 focus:border-stone-400 bg-transparent text-right font-mono" value={inv.date || ''} onChange={e => setInv({...inv, date: e.target.value})} />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <table className="w-full mb-8 text-sm">
+                        <thead>
+                            <tr className="border-b-2 border-black text-left text-[10px] uppercase tracking-widest text-stone-500">
+                                <th className="pb-2">Description</th>
+                                <th className="pb-2 w-20 text-right">Qty</th>
+                                <th className="pb-2 w-32 text-right">Unit Price</th>
+                                <th className="pb-2 w-10"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {inv.items.map((it: any, i: number) => (
+                                <tr key={i} className="border-b border-stone-100 group">
+                                    <td className="py-3"><input className="w-full outline-none bg-transparent placeholder-stone-300" placeholder="Item description" value={it.description || ''} onChange={e => { const items = [...inv.items]; items[i].description = e.target.value; setInv({...inv, items}); }} /></td>
+                                    <td className="py-3 text-right"><input type="number" className="w-full text-right outline-none bg-transparent placeholder-stone-300 font-mono" placeholder="1" value={it.quantity || ''} onChange={e => { const items = [...inv.items]; items[i].quantity = e.target.value; setInv({...inv, items}); }} /></td>
+                                    <td className="py-3 text-right"><input type="number" className="w-full text-right outline-none bg-transparent placeholder-stone-300 font-mono" placeholder="0.00" value={it.price || ''} onChange={e => { const items = [...inv.items]; items[i].price = e.target.value; setInv({...inv, items}); }} /></td>
+                                    <td className="py-3 text-right">
+                                        <button onClick={() => { const items = inv.items.filter((_: any, idx: number) => idx !== i); setInv({...inv, items}); }} className="text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"><TrashIcon className="w-4 h-4 mx-auto" /></button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    
+                    <button onClick={() => setInv({...inv, items: [...inv.items, { description: '', quantity: 1, price: '' }]})} className="text-[10px] font-bold uppercase tracking-widest text-stone-400 hover:text-black transition">+ Add Item</button>
+                    
+                    <div className="mt-12 flex flex-col md:flex-row justify-between items-end gap-10">
+                        <div className="w-full md:w-1/2">
+                            <h3 className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-2">Notes & Terms</h3>
+                            <textarea className="w-full min-h-[100px] outline-none border border-stone-200 rounded p-4 text-xs bg-stone-50 focus:border-stone-400 transition resize-none text-stone-600" placeholder="Transfer details, valid until dates, thank you note..." value={inv.notes || ''} onChange={e => setInv({...inv, notes: e.target.value})} />
+                        </div>
+                        
+                        <div className="w-full md:w-1/3 space-y-3 pb-4">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-stone-500 uppercase tracking-widest text-[10px] font-bold">Subtotal</span>
+                                <span className="font-mono">R {inv.items.reduce((a: number, c: any) => a + (parseFloat(c.price) || 0) * (parseInt(c.quantity) || 1), 0).toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm border-b border-stone-200 pb-3">
+                                <span className="text-stone-500 uppercase tracking-widest text-[10px] font-bold">Discount</span>
+                                <div className="flex items-center text-red-500">
+                                    <span className="mr-1">- R </span>
+                                    <input type="number" className="w-16 text-right outline-none bg-transparent font-mono border-b border-dashed border-red-200 focus:border-red-400" placeholder="0.00" value={inv.discount || ''} onChange={e => setInv({...inv, discount: e.target.value})} />
+                                </div>
+                            </div>
+                            <div className="flex justify-between items-center pt-2">
+                                <span className="font-bold uppercase tracking-widest text-xs">Total</span>
+                                <span className="text-2xl font-bold font-mono tracking-tighter">
+                                    R {(inv.items.reduce((a: number, c: any) => a + (parseFloat(c.price) || 0) * (parseInt(c.quantity) || 1), 0) - (parseFloat(inv.discount) || 0)).toFixed(2)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    );
+};

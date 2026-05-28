@@ -1,9 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { dbSubscribeToCollection } from '../../utils/dbAdapter';
+import FullScreenImageViewer from '../../components/FullScreenImageViewer';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+const GalleryRow: React.FC<{ images: string[], onSelect: (img: string) => void }> = ({ images, onSelect }) => {
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const scroll = (direction: 'left' | 'right') => {
+        if(scrollRef.current) {
+            const container = scrollRef.current;
+            const scrollAmount = 250;
+            container.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+        }
+    }
+
+    return (
+        <div className="relative pt-8 group">
+            <button onClick={() => scroll('left')} className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all">
+                <ChevronLeft size={20} />
+            </button>
+            <div ref={scrollRef} className="flex gap-4 pb-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {images.map((img, i) => (
+                    <div key={i} onClick={() => onSelect(img)} className="cursor-pointer min-w-[120px] w-[120px] aspect-square overflow-hidden bg-[#0a0a0a] rounded-lg">
+                        <img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                    </div>
+                ))}
+            </div>
+            <button onClick={() => scroll('right')} className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all">
+                <ChevronRight size={20} />
+            </button>
+        </div>
+    )
+}
 
 const PhotographyLibrary: React.FC<{ settings: any }> = ({ settings }) => {
   const [libraryData, setLibraryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     const unsub = dbSubscribeToCollection('photo_library', (data) => {
@@ -33,28 +65,28 @@ const PhotographyLibrary: React.FC<{ settings: any }> = ({ settings }) => {
                 No portfolio items available yet.
             </div>
         ) : (
-            <div className="space-y-24">
+            <div className="space-y-16">
                 {libraryData.map((item, index) => (
-                    <div key={item.id} className={`flex flex-col ${index % 2 !== 0 ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-12 md:gap-24 py-12 border-b border-white/5 last:border-0`}>
+                    <div key={item.id} className={`flex flex-col ${index % 2 !== 0 ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-8 md:gap-16 py-8 border-b border-white/5 last:border-0`}>
                         {/* Primary Image Cover */}
-                        <div className="w-full md:w-1/2 shrink-0">
+                        <div className="w-full md:w-2/5 shrink-0">
                             {item.primaryImage ? (
                                 <div className="relative group w-full">
                                     <div className="absolute inset-0 bg-stone-900/10 group-hover:bg-transparent transition duration-500 z-10 pointer-events-none"></div>
-                                    <img src={item.primaryImage} alt={item.title} className="w-full h-auto aspect-[3/4] object-cover grayscale opacity-90 group-hover:grayscale-0 group-hover:opacity-100 transition duration-1000 ease-out shadow-2xl" />
+                                    <img src={item.primaryImage} alt={item.title} className="w-full h-auto aspect-[3/4] object-cover transition duration-1000 ease-out shadow-2xl rounded-2xl" />
                                 </div>
                             ) : (
-                                <div className="w-full aspect-[3/4] bg-neutral-900 border border-white/5 flex items-center justify-center">
+                                <div className="w-full aspect-[3/4] bg-neutral-900 border border-white/5 flex items-center justify-center rounded-2xl">
                                     <span className="text-stone-600 text-xs tracking-widest uppercase">No Image</span>
                                 </div>
                             )}
                         </div>
                         
                         {/* Story & Details */}
-                        <div className="w-full md:w-1/2 space-y-8">
-                            <div className="space-y-2">
+                        <div className="w-full md:w-3/5 space-y-4">
+                            <div className="space-y-1">
                                <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-stone-500">Editorial</p>
-                               <h3 className="text-4xl md:text-5xl font-black tracking-tighter text-stone-200 drop-shadow-sm">{item.title}</h3>
+                               <h3 className="text-3xl md:text-4xl font-black tracking-tighter text-stone-200 drop-shadow-sm">{item.title}</h3>
                             </div>
                             
                             <div className="prose prose-invert prose-stone text-stone-400 font-light leading-relaxed">
@@ -63,20 +95,15 @@ const PhotographyLibrary: React.FC<{ settings: any }> = ({ settings }) => {
                             
                             {/* Gallery Miniatures */}
                             {item.galleryImages && item.galleryImages.length > 0 && (
-                                <div className="pt-8 grid grid-cols-4 gap-4">
-                                    {item.galleryImages.slice(0, 4).map((img: string, i: number) => (
-                                        <div key={i} className="relative group cursor-pointer aspect-square overflow-hidden bg-[#0a0a0a]">
-                                            <div className="absolute inset-0 bg-black/40 group-hover:bg-transparent transition duration-300 z-10 mix-blend-multiply pointer-events-none"></div>
-                                            <img src={img} alt={`Gallery ${i}`} className="w-full h-full object-cover grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700 hover:scale-105" />
-                                        </div>
-                                    ))}
-                                </div>
+                                <GalleryRow images={item.galleryImages} onSelect={setSelectedImage} />
                             )}
                         </div>
                     </div>
                 ))}
             </div>
         )}
+        
+        {selectedImage && <FullScreenImageViewer src={selectedImage} alt="Gallery view" onClose={() => setSelectedImage(null)} />}
     </div>
   );
 };

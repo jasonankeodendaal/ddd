@@ -26,6 +26,7 @@ import SpecialsSection from './components/SpecialsSection';
 import StaticBosSalonBackground from './components/StaticBosSalonBackground';
 import PhotographyApp from './pages/photography/PhotographyApp';
 import PhotographyAdminDashboard from './pages/photography/PhotographyAdminDashboard';
+import AdminLoginPage from './pages/AdminLoginPage';
 
 // --- INTERFACES ---
 export interface PortfolioItem {
@@ -612,10 +613,13 @@ const App: React.FC = () => {
 
   // Admin and Client Portal views are always accessible if explicitly navigated to
   if (currentView === 'photography') {
-      return <PhotographyApp onNavigateHome={() => setCurrentView('home')} />;
+      return <PhotographyApp onNavigateHome={() => setCurrentView('home')} onNavigateAdmin={() => setCurrentView('photography_admin')} />;
   }
 
   if (currentView === 'photography_admin') {
+      if (!user) {
+          return <AdminLoginPage onNavigate={setCurrentView} logoUrl={settings.logoUrl} />;
+      }
       return <PhotographyAdminDashboard user={user} onNavigate={setCurrentView} />;
   }
 

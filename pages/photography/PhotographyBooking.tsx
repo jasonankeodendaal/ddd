@@ -40,7 +40,7 @@ const PhotographyBooking: React.FC<{ settings: any }> = ({ settings }) => {
           let referenceImageUrls: string[] = [];
           if (referenceImages.length > 0) {
               const uploadPromises = referenceImages.map(file => 
-                  dbUploadFile(file, 'media', 'booking-refs/')
+                  dbUploadFile(file, 'media', 'booking-refs/').then(url => `${url}?download=`)
               );
               referenceImageUrls = await Promise.all(uploadPromises);
           }
@@ -60,10 +60,8 @@ Time: ${formData.time}
 Message: ${formData.message}
 Reference Images: ${referenceImageUrls.join('\n')}`;
         
-          const whatsappNumber = settings.whatsAppNumber || '';
-          const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
-          
-          window.open(whatsappUrl, '_blank');
+          // Message is saved to DB, we no longer jump to WhatsApp
+          // Administration will contact client manually
           
           setSuccess(true);
           setFormData({ clientName: '', clientEmail: '', clientPhone: '', service: '', date: '', time: '', message: '' });

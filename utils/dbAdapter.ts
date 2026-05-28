@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { compressImage } from './imageCompression';
 
 // --- Types ---
-type CollectionName = 'portfolio' | 'specials' | 'showroom' | 'bookings' | 'expenses' | 'inventory' | 'settings' | 'invoices' | 'clients' | 'photo_library' | 'photo_bookings';
+type CollectionName = 'portfolio' | 'specials' | 'showroom' | 'bookings' | 'expenses' | 'inventory' | 'settings' | 'invoices' | 'clients' | 'photo_library' | 'photo_bookings' | 'photo_invoices';
 type Listener = (data: any[]) => void;
 type DocListener = (data: any) => void;
 

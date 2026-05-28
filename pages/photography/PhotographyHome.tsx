@@ -10,7 +10,11 @@ const PhotographyHome: React.FC<{ settings: any }> = ({ settings }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const images = [];
-  if (settings.heroBgUrl) images.push(settings.heroBgUrl);
+  if (settings.heroBgUrls && settings.heroBgUrls.length > 0) {
+    images.push(...settings.heroBgUrls);
+  } else if (settings.heroBgUrl) {
+    images.push(settings.heroBgUrl);
+  }
   if (settings.aboutUsImageUrl) images.push(settings.aboutUsImageUrl);
   if (images.length === 0) images.push(...fallbackImages);
   else if (images.length === 1) images.push(...fallbackImages.slice(0, 2));
@@ -27,16 +31,23 @@ const PhotographyHome: React.FC<{ settings: any }> = ({ settings }) => {
       
       {/* Flipping Background Hero Section - Bleeding Full Viewport */}
       <section className="w-full relative h-[60vh] md:h-[85vh] -mt-24 md:-mt-32 mb-10 md:mb-20 overflow-hidden flex items-center justify-center">
-        {images.map((img, idx) => (
-            <div 
-              key={idx}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${idx === currentImageIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
-            >
-              <div className="absolute inset-0 bg-black/40 z-10 mix-blend-multiply"></div>
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent z-10"></div>
-              <img src={img} alt={`Hero ${idx}`} className="w-full h-full object-cover grayscale-[30%]" />
-            </div>
-        ))}
+        {images.map((img, idx) => {
+            const isVideo = img.match(/\.(mp4|webm|ogg)$/i);
+            return (
+              <div 
+                key={idx}
+                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${idx === currentImageIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
+              >
+                <div className="absolute inset-0 bg-black/40 z-10 mix-blend-multiply"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent z-10"></div>
+                {isVideo ? (
+                    <video src={img} autoPlay muted loop playsInline className="w-full h-full object-cover grayscale-[30%]" />
+                ) : (
+                    <img src={img} alt={`Hero ${idx}`} className="w-full h-full object-cover grayscale-[30%]" />
+                )}
+              </div>
+            );
+        })}
         
         <div className="relative z-20 text-center px-4 md:px-6 max-w-4xl mx-auto flex flex-col items-center mt-12 md:mt-20">
            <p className="text-[9px] md:text-xs font-bold tracking-[0.2em] md:tracking-[0.3em] uppercase text-stone-300 mb-4 md:mb-6 drop-shadow-sm">

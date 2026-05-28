@@ -9,9 +9,10 @@ import PhotographyFooter from './PhotographyFooter';
 
 interface Props {
   onNavigateHome: () => void;
+  onNavigateAdmin?: () => void;
 }
 
-const PhotographyApp: React.FC<Props> = ({ onNavigateHome }) => {
+const PhotographyApp: React.FC<Props> = ({ onNavigateHome, onNavigateAdmin }) => {
   const [currentView, setCurrentView] = useState<'home' | 'library' | 'booking'>('home');
   const [settings, setSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
@@ -122,7 +123,7 @@ const PhotographyApp: React.FC<Props> = ({ onNavigateHome }) => {
             {currentView === 'booking' && <div className="max-w-[1000px] mx-auto px-4 md:px-8"><PhotographyBooking settings={settings} /></div>}
           </main>
 
-          <PhotographyFooter settings={settings} />
+          <PhotographyFooter settings={settings} onNavigateAdmin={onNavigateAdmin} />
       </div>
     </div>
   );

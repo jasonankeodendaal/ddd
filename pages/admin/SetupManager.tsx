@@ -168,6 +168,65 @@ create table if not exists public.invoices (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
+create table if not exists public.expenses (
+  id uuid primary key default uuid_generate_v4(),
+  date date,
+  category text,
+  description text,
+  amount numeric,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+create table if not exists public.inventory (
+  id uuid primary key default uuid_generate_v4(),
+  "productName" text,
+  brand text,
+  category text,
+  quantity numeric,
+  "minStockLevel" numeric,
+  "unitCost" numeric,
+  supplier text,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+create table if not exists public.photo_library (
+  id uuid primary key default uuid_generate_v4(),
+  title text,
+  story text,
+  "primaryImage" text,
+  "galleryImages" jsonb default '[]'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+create table if not exists public.photo_bookings (
+  id uuid primary key default uuid_generate_v4(),
+  clientName text,
+  clientEmail text,
+  clientPhone text,
+  service text,
+  date text,
+  time text,
+  message text,
+  status text default 'pending',
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+create table if not exists public.photo_invoices (
+  id uuid primary key default uuid_generate_v4(),
+  type text,
+  clientName text,
+  whatsapp text,
+  email text,
+  date text,
+  items jsonb,
+  subtotal numeric,
+  discount numeric,
+  total numeric,
+  status text,
+  notes text,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
 create table if not exists public.settings (
   id text primary key,
   "companyName" text,
@@ -262,6 +321,11 @@ alter table public.settings enable row level security;
 alter table public.bookings enable row level security;
 alter table public.clients enable row level security;
 alter table public.invoices enable row level security;
+alter table public.expenses enable row level security;
+alter table public.inventory enable row level security;
+alter table public.photo_library enable row level security;
+alter table public.photo_bookings enable row level security;
+alter table public.photo_invoices enable row level security;
 
 -- Define Policies
 drop policy if exists "Public Read All Port" on public.portfolio;
@@ -291,6 +355,13 @@ create policy "Admin All Port" on public.portfolio for all using (auth.role() = 
 create policy "Admin All Spec" on public.specials for all using (auth.role() = 'authenticated');
 create policy "Admin All Show" on public.showroom for all using (auth.role() = 'authenticated');
 create policy "Admin All Clients" on public.clients for all using (auth.role() = 'authenticated');
+create policy "Admin All Exp" on public.expenses for all using (auth.role() = 'authenticated');
+create policy "Admin All Inv" on public.inventory for all using (auth.role() = 'authenticated');
+create policy "Public Read All Photo Lib" on public.photo_library for select using (true);
+create policy "Admin All Photo Lib" on public.photo_library for all using (auth.role() = 'authenticated');
+create policy "Public Sub Photo Book" on public.photo_bookings for insert with check (true);
+create policy "Admin All Photo Book" on public.photo_bookings for all using (auth.role() = 'authenticated');
+create policy "Admin All Photo Inv" on public.photo_invoices for all using (auth.role() = 'authenticated');
 create policy "Public All Book" on public.bookings for all using (true);
 create policy "Public All Inv" on public.invoices for all using (true);
 `.trim();
@@ -308,7 +379,12 @@ CREATE PUBLICATION supabase_realtime FOR TABLE
     public.bookings, 
     public.settings, 
     public.invoices,
-    public.clients;
+    public.clients,
+    public.expenses,
+    public.inventory,
+    public.photo_library,
+    public.photo_bookings,
+    public.photo_invoices;
 `.trim();
 
   const sql_storage = `

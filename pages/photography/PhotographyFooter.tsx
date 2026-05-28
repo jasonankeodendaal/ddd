@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
+import CreatorModal from '../../components/CreatorModal';
 
-const PhotographyFooter: React.FC<{ settings: any }> = ({ settings }) => {
+const PhotographyFooter: React.FC<{ settings: any, onNavigateAdmin?: () => void }> = ({ settings, onNavigateAdmin }) => {
+  const [isCreatorModalOpen, setIsCreatorModalOpen] = useState(false);
+
   return (
-    <footer className="w-full border-t border-white/5 bg-[#0d0d0d] relative mt-12 z-10 px-4 py-8 md:py-12">
+    <>
+      <footer className="w-full border-t border-white/5 bg-[#0d0d0d] relative mt-12 z-10 px-4 py-8 md:py-12">
       <div className="max-w-[1000px] mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 text-stone-400 text-xs">
           
         {/* Brand Column */}
@@ -56,11 +60,44 @@ const PhotographyFooter: React.FC<{ settings: any }> = ({ settings }) => {
         
       </div>
       
-      <div className="max-w-[1000px] mx-auto mt-12 pt-6 border-t border-white/5 flex flex-col md:flex-row items-center justify-between text-[10px] uppercase tracking-widest text-stone-600">
-          <p>&copy; {new Date().getFullYear()} {settings.companyName || 'Photography'}. All rights reserved.</p>
-          <p className="mt-2 md:mt-0">Powered by Bos Salon Engine</p>
+      <div className="max-w-[1000px] mx-auto mt-12 pt-6 border-t border-white/5 flex flex-col items-center gap-4 text-[10px] uppercase tracking-widest text-stone-600">
+          <div className="flex flex-col md:flex-row items-center justify-between w-full">
+              <p>&copy; {new Date().getFullYear()} {settings.companyName || 'Photography'}. All rights reserved.</p>
+              <p className="mt-2 md:mt-0">Powered by Bos Salon Engine</p>
+          </div>
+          
+          {/* Credits Row */}
+          <div className="flex flex-col items-center gap-4 mt-4 w-full">
+            <div className="flex items-center justify-center gap-2">
+                <span className="text-stone-500 font-medium normal-case tracking-normal">Website designed and developed by</span>
+                <button
+                    onClick={() => setIsCreatorModalOpen(true)}
+                    className="transition-transform hover:scale-110 focus:outline-none"
+                    aria-label="View Creator"
+                >
+                    <img 
+                        src="https://i.ibb.co/BHJM0n0v/image-removebg-preview.png" 
+                        alt="Creator Logo" 
+                        className="h-10 w-auto object-contain transition" 
+                    />
+                </button>
+            </div>
+            {onNavigateAdmin && (
+                <button 
+                    onClick={onNavigateAdmin} 
+                    className="font-bold bg-white/5 text-stone-400 px-4 py-1.5 rounded-full hover:bg-white hover:text-black transition-colors shadow-sm border border-transparent"
+                >
+                    Admin Access
+                </button>
+            )}
+          </div>
       </div>
     </footer>
+    <CreatorModal
+      isOpen={isCreatorModalOpen}
+      onClose={() => setIsCreatorModalOpen(false)}
+    />
+    </>
   );
 };
 
