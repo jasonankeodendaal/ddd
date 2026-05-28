@@ -37,29 +37,29 @@ const LibraryItem: React.FC<{ item: any, index: number }> = ({ item, index }) =>
     const [isFullScreen, setIsFullScreen] = useState(false);
 
     return (
-        <div className={`flex flex-col ${index % 2 !== 0 ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-8 md:gap-16 py-8 border-b border-white/5 last:border-0`}>
+        <div className={`flex flex-col ${index % 2 !== 0 ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-4 md:gap-16 py-4 md:py-8 border-b border-white/5 last:border-0`}>
             {/* Primary Image Cover */}
-            <div className="w-full md:w-2/5 shrink-0">
+            <div className="w-4/5 md:w-1/3 shrink-0">
                 {currentImage ? (
                     <div className="relative group w-full cursor-pointer" onClick={() => setIsFullScreen(true)}>
                         <div className="absolute inset-0 bg-stone-900/10 group-hover:bg-transparent transition duration-500 z-10 pointer-events-none"></div>
-                        <img src={currentImage} alt={item.title} className="w-full h-auto aspect-[3/4] object-cover transition duration-1000 ease-out shadow-2xl rounded-2xl" />
+                        <img src={currentImage} alt={item.title} className="w-full h-auto aspect-[3/4] object-cover transition duration-1000 ease-out shadow-lg rounded-xl" />
                     </div>
                 ) : (
-                    <div className="w-full aspect-[3/4] bg-neutral-900 border border-white/5 flex items-center justify-center rounded-2xl">
+                    <div className="w-full aspect-[3/4] bg-neutral-900 border border-white/5 flex items-center justify-center rounded-xl">
                         <span className="text-stone-600 text-xs tracking-widest uppercase">No Image</span>
                     </div>
                 )}
             </div>
             
             {/* Story & Details */}
-            <div className="w-full md:w-3/5 space-y-4">
-                <div className="space-y-1">
-                    <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-stone-500">Editorial</p>
-                    <h3 className="text-3xl md:text-4xl font-black tracking-tighter text-stone-200 drop-shadow-sm">{item.title}</h3>
+            <div className="w-full md:w-2/3 space-y-3">
+                <div className="space-y-0.5">
+                    <p className="text-[9px] font-bold tracking-[0.2em] uppercase text-stone-500">Editorial</p>
+                    <h3 className="text-2xl md:text-4xl font-black tracking-tighter text-stone-200 drop-shadow-sm">{item.title}</h3>
                 </div>
                 
-                <div className="prose prose-invert prose-stone text-stone-400 font-light leading-relaxed">
+                <div className="prose prose-invert prose-stone text-stone-400 text-sm font-light leading-relaxed">
                     <p>{item.story}</p>
                 </div>
                 
