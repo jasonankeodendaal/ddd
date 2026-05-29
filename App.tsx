@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import * as UAParserMod from 'ua-parser-js';
+const UAParser = (UAParserMod as any).UAParser || UAParserMod;
 import { 
   dbOnAuthStateChange, 
   dbSubscribeToCollection, 
@@ -311,6 +313,56 @@ const App: React.FC = () => {
   
   const location = useLocation();
   const nav = useNavigate();
+
+  // --- TRAFFIC TRACKING ---
+  useEffect(() => {
+    try {
+      const logs = JSON.parse(localStorage.getItem('traffic_logs') || '[]');
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      const utmSource = urlParams.get('utm_source');
+      const utmMedium = urlParams.get('utm_medium');
+      const utmCampaign = urlParams.get('utm_campaign');
+      
+      const referrer = document.referrer;
+      let rawSource = utmSource || '';
+      if (!rawSource) {
+          if (referrer) {
+              try {
+                  rawSource = new URL(referrer).hostname;
+              } catch (e) {
+                  rawSource = referrer;
+              }
+          } else {
+              rawSource = 'Direct';
+          }
+      }
+
+      const parser = new UAParser();
+      const result = parser.getResult();
+      
+      const lastLog = logs[logs.length - 1];
+      // simplistic session anti-spam: only log if last log was more than 10 mins ago or different source
+      const isNewSession = !lastLog || (Date.now() - lastLog.id > 10 * 60 * 1000) || lastLog.source !== rawSource;
+      
+      if (isNewSession) {
+          logs.push({
+            id: Date.now(),
+            date: new Date().toISOString(),
+            source: rawSource,
+            medium: utmMedium || '',
+            campaign: utmCampaign || '',
+            referrer: referrer,
+            userAgent: navigator.userAgent,
+            browser: `${result.browser.name || 'Unknown'} ${result.browser.version || ''}`.trim(),
+            os: `${result.os.name || 'Unknown'} ${result.os.version || ''}`.trim(),
+            deviceType: result.device.type || (result.os.name?.match(/iOS|Android/i) ? 'mobile' : 'desktop'),
+            page: window.location.pathname
+          });
+          localStorage.setItem('traffic_logs', JSON.stringify(logs));
+      }
+    } catch {}
+  }, [location.pathname]);
 
   useEffect(() => {
     const path = location.pathname;

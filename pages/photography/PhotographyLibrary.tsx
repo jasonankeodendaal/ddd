@@ -37,54 +37,115 @@ const LibraryItem: React.FC<{ item: any, index: number }> = ({ item, index }) =>
     const [isFullScreen, setIsFullScreen] = useState(false);
 
     return (
-        <div className={`group flex flex-row ${index % 2 !== 0 ? 'flex-row-reverse' : 'flex-row'} items-stretch gap-3 md:gap-20 py-4 md:py-16 border-b border-white/5 last:border-0`}>
-            {/* Primary Image Cover */}
-            <div className="w-[40%] md:w-1/4 shrink-0">
-                {currentImage ? (
-                    <div className="relative cursor-pointer overflow-hidden rounded-lg md:rounded-2xl shadow-xl transition-all duration-700 aspect-[3/4.5]" onClick={() => setIsFullScreen(true)}>
-                        <img src={currentImage} alt={item.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                    </div>
-                ) : (
-                    <div className="w-full aspect-[3/4.5] bg-stone-900 border border-white/5 flex items-center justify-center rounded-lg md:rounded-2xl">
-                        <span className="text-stone-700 text-[8px] uppercase tracking-tighter italic">Void</span>
-                    </div>
-                )}
-            </div>
-            
-            {/* Story & Details */}
-            <div className="w-[60%] md:w-3/4 flex flex-col justify-between py-1">
-                <div>
-                    <div className="space-y-1 pb-3 md:pb-4 border-b border-white/10 mb-3 md:mb-6">
-                        <p className="text-[8px] md:text-[9px] font-bold tracking-[0.3em] uppercase text-stone-500 italic">Edition {index + 1}</p>
-                        <h3 className="text-lg md:text-5xl font-serif font-light tracking-tight text-stone-50 leading-tight">{item.title}</h3>
-                    </div>
-                    
-                    <div className="border-l border-stone-800 pl-3 md:pl-8 text-stone-400 text-[10px] md:text-base font-light leading-relaxed tracking-wide opacity-90 line-clamp-3 md:line-clamp-none italic">
-                        <p>{item.story1}</p>
+        <>
+            {/* Desktop View */}
+            <div className={`hidden md:flex group flex-row ${index % 2 !== 0 ? 'flex-row-reverse' : 'flex-row'} items-center gap-12 lg:gap-24 py-20 border-b border-stone-800/50 last:border-0`}>
+                {/* Primary Image Cover */}
+                <div className="w-[45%] shrink-0">
+                     <div className="relative w-full cursor-pointer overflow-hidden rounded-[2rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.8)] transition-all duration-1000 ease-out hover:shadow-[0_20px_50px_-15px_rgba(255,255,255,0.05)] bg-[#050505] border border-white/5 aspect-[4/5] group/img" onClick={() => setIsFullScreen(true)}>
+                        {currentImage ? (
+                            <>
+                                <img src={currentImage} alt={item.title} className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover/img:scale-105 opacity-90 group-hover/img:opacity-100" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#050505]/80 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                            </>
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                                <span className="text-stone-700 text-sm uppercase tracking-[0.3em] font-light italic">Void</span>
+                            </div>
+                        )}
                     </div>
                 </div>
                 
-                {/* Gallery Miniatures */}
-                {item.galleryImages && item.galleryImages.length > 0 && (
-                    <div className="mt-4">
-                        <p className="text-[7px] md:text-[9px] font-bold tracking-[0.2em] uppercase text-stone-600 mb-1 italic">Archival View</p>
-                        <GalleryRow images={item.galleryImages} onSelect={setCurrentImage} />
+                {/* Story & Details */}
+                <div className="w-[55%] flex flex-col justify-center">
+                    <div className="mb-10">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="h-[1px] w-8 bg-stone-700"></div>
+                            <p className="text-[10px] font-bold tracking-[0.4em] uppercase text-stone-500 italic">Edition {String(index + 1).padStart(2, '0')}</p>
+                        </div>
+                        <h3 className="text-5xl lg:text-7xl font-serif font-light tracking-tighter text-stone-50 leading-[1.1] mb-10">
+                            {item.title}
+                        </h3>
+                        
+                        <div className="border-l border-stone-800/80 pl-8 lg:pl-10 text-stone-400 text-base lg:text-lg font-light leading-relaxed tracking-wider opacity-90 space-y-5">
+                            <p className="first-letter:text-4xl first-letter:font-serif first-letter:text-stone-300 first-letter:mr-2 first-letter:float-left">{item.story1}</p>
+                            {item.story2 && <p>{item.story2}</p>}
+                            {item.story3 && <p>{item.story3}</p>}
+                        </div>
                     </div>
-                )}
+                    
+                    {/* Gallery Miniatures */}
+                    {item.galleryImages && item.galleryImages.length > 0 && (
+                        <div className="mt-4">
+                            <div className="flex items-center gap-4 mb-4 pl-2">
+                                <p className="text-[9px] font-bold tracking-[0.3em] uppercase text-stone-600">Archival Gallery</p>
+                                <div className="h-[1px] flex-1 bg-gradient-to-r from-stone-800/80 to-transparent"></div>
+                            </div>
+                            <div className="bg-[#080808] rounded-2xl p-4 lg:p-6 border border-white/5">
+                                <GalleryRow images={item.galleryImages} onSelect={setCurrentImage} />
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Mobile View */}
+            <div className="flex md:hidden flex-col mb-10 w-full relative">
+                 <div className="bg-[#121212] rounded-[1.5rem] overflow-hidden border border-white/5 shadow-2xl relative flex flex-col">
+                    <div className="w-full aspect-square relative cursor-pointer shrink-0" onClick={() => setIsFullScreen(true)}>
+                        {currentImage ? (
+                            <>
+                                <img src={currentImage} alt={item.title} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#121212] via-[#121212]/30 to-transparent pointer-events-none"></div>
+                            </>
+                        ) : (
+                            <div className="w-full h-full bg-stone-900 flex items-center justify-center">
+                                <span className="text-stone-700 text-[10px] uppercase tracking-tighter italic">Void</span>
+                            </div>
+                        )}
+                        <div className="absolute bottom-5 left-5 right-5 pointer-events-none">
+                            <p className="text-[9px] font-black tracking-[0.4em] uppercase text-stone-400 drop-shadow-md mb-1">Edition {index + 1}</p>
+                            <h3 className="text-4xl font-serif font-light tracking-tight text-white leading-none drop-shadow-2xl">{item.title}</h3>
+                        </div>
+                    </div>
+
+                    <div className="px-5 pb-6 pt-1">
+                        <div className="text-stone-400 text-xs font-light leading-relaxed tracking-wide space-y-3 mb-6">
+                            <p>{item.story1}</p>
+                            {item.story2 && <p>{item.story2}</p>}
+                            {item.story3 && <p>{item.story3}</p>}
+                        </div>
+
+                        {item.galleryImages && item.galleryImages.length > 0 && (
+                            <div className="mt-2 bg-[#080808] rounded-xl p-3 border border-white/5">
+                                <p className="text-[8px] font-bold tracking-[0.3em] uppercase text-stone-500 mb-2 px-1">Gallery</p>
+                                <GalleryRow images={item.galleryImages} onSelect={setCurrentImage} />
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {isFullScreen && <FullScreenImageViewer src={currentImage} alt={item.title} onClose={() => setIsFullScreen(false)} />}
-        </div>
+        </>
     )
 }
 
 const PhotographyLibrary: React.FC<{ settings: any }> = ({ settings }) => {
-  const [libraryData, setLibraryData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [libraryData, setLibraryData] = useState<any[]>(() => {
+    try {
+        const cached = localStorage.getItem('photography_library_cache');
+        return cached ? JSON.parse(cached) : [];
+    } catch {
+        return [];
+    }
+  });
+  const [loading, setLoading] = useState(() => !localStorage.getItem('photography_library_cache'));
 
   useEffect(() => {
     const unsub = dbSubscribeToCollection('photo_library', (data) => {
         setLibraryData(data);
+        localStorage.setItem('photography_library_cache', JSON.stringify(data));
         setLoading(false);
     });
     return unsub;
