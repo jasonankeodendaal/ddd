@@ -13,6 +13,7 @@ const PhotographyBooking: React.FC<{ settings: any }> = ({ settings }) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [waLink, setWaLink] = useState('');
   const [error, setError] = useState('');
   const [referenceImages, setReferenceImages] = useState<File[]>([]);
   const [referenceImagePreviews, setReferenceImagePreviews] = useState<string[]>([]);
@@ -50,23 +51,40 @@ const PhotographyBooking: React.FC<{ settings: any }> = ({ settings }) => {
               status: 'pending'
           });
           
-          const message = `Hello, I would like to book a photography session.
-Name: ${formData.clientName}
-Email: ${formData.clientEmail}
-Phone: ${formData.clientPhone}
-Service: ${formData.service}
-Date: ${formData.date}
-Time: ${formData.time}
-Message: ${formData.message}
-Reference Images: ${referenceImageUrls.join('\n')}`;
+          const message = `📸 *New Photography Inquiry | Magical Memories* 📸
+
+👤 *Client Details*
+• Name: ${formData.clientName}
+• Email: ${formData.clientEmail}
+• Phone: ${formData.clientPhone}
+
+📅 *Event/Shoot Details*
+• Service Type: ${formData.service || 'Not specified'}
+• Preferred Date: ${formData.date}
+• Preferred Time: ${formData.time}
+
+💬 *Message/Vision*
+${formData.message || 'No additional details provided.'}
+
+🖼️ *Reference Images/Inspiration*
+${referenceImageUrls.length > 0 ? referenceImageUrls.join('\n') : 'No images attached.'}
+
+_Sent via Magical Memories Booking Portal_`;
         
-          // Message is saved to DB, we no longer jump to WhatsApp
-          // Administration will contact client manually
-          
+          // Redirect to WhatsApp
+          const adminPhone = settings?.whatsAppNumber || "27795904162";
+          const cleanPhone = adminPhone.replace(/\D/g, '');
+          const whatsAppLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+
+          setWaLink(whatsAppLink);
           setSuccess(true);
           setFormData({ clientName: '', clientEmail: '', clientPhone: '', service: '', date: '', time: '', message: '' });
           setReferenceImages([]);
           setReferenceImagePreviews([]);
+          
+          setTimeout(() => {
+              window.open(whatsAppLink, '_blank') || (window.location.href = whatsAppLink);
+          }, 1500);
       } catch (err: any) {
           setError(err.message || 'Failed to submit booking. Please try again.');
       } finally {
@@ -147,10 +165,23 @@ Reference Images: ${referenceImageUrls.join('\n')}`;
              {success ? (
                  <div className="bg-[#121212] border border-white/5 text-stone-200 p-8 text-center shadow-inner pt-16 pb-16">
                      <h3 className="text-xl font-bold mb-4 tracking-wide uppercase">Request Received</h3>
-                     <p className="text-stone-400 text-sm font-light max-w-sm mx-auto">Thank you for reaching out. We will connect with you via WhatsApp to finalize styling and scheduling.</p>
-                     <button onClick={() => setSuccess(false)} className="mt-8 px-8 py-3 bg-stone-200 text-black font-bold uppercase tracking-widest text-[10px] hover:bg-white transition">
-                         New Request
-                     </button>
+                     <p className="text-stone-400 text-sm font-light max-w-sm mx-auto mb-6">Successfully submitted. You are being redirected to WhatsApp to send your details. If nothing happens, please click below.</p>
+                     
+                     <div className="flex flex-col items-center justify-center gap-4">
+                         {waLink && (
+                             <a 
+                                 href={waLink} 
+                                 target="_blank" 
+                                 rel="noopener noreferrer"
+                                 className="px-8 py-4 bg-[#25D366] text-white font-bold uppercase tracking-widest text-[11px] shadow-lg hover:bg-[#1ebd5a] transition rounded flex items-center justify-center gap-3 w-full sm:w-auto"
+                             >
+                                 Open WhatsApp to Send
+                             </a>
+                         )}
+                         <button onClick={() => setSuccess(false)} className="px-8 py-3 text-stone-500 font-bold uppercase tracking-widest text-[10px] hover:text-white transition">
+                             New Request
+                         </button>
+                     </div>
                  </div>
              ) : (
                  <form onSubmit={handleSubmit} className="space-y-8">

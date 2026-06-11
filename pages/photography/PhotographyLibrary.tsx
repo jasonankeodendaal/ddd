@@ -36,13 +36,76 @@ const LibraryItem: React.FC<{ item: any, index: number }> = ({ item, index }) =>
     const [currentImage, setCurrentImage] = useState(item.primaryImage);
     const [isFullScreen, setIsFullScreen] = useState(false);
 
+    const allImages = [item.primaryImage, ...(item.galleryImages || [])].filter(Boolean);
+
+    const handleNext = () => {
+        const curIndex = allImages.indexOf(currentImage);
+        if (curIndex >= 0 && curIndex < allImages.length - 1) {
+            setCurrentImage(allImages[curIndex + 1]);
+        } else if (allImages.length > 0) {
+            setCurrentImage(allImages[0]); // Loop back to start
+        }
+    };
+
+    const handlePrev = () => {
+        const curIndex = allImages.indexOf(currentImage);
+        if (curIndex > 0) {
+            setCurrentImage(allImages[curIndex - 1]);
+        } else if (allImages.length > 0) {
+            setCurrentImage(allImages[allImages.length - 1]); // Loop to end
+        }
+    };
+
+    const [touchStart, setTouchStart] = useState(0);
+    const [touchEnd, setTouchEnd] = useState(0);
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const handleTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > 50;
+        const isRightSwipe = distance < -50;
+
+        if (isLeftSwipe && allImages.length > 1) {
+            handleNext();
+        }
+        if (isRightSwipe && allImages.length > 1) {
+            handlePrev();
+        }
+        
+        setTouchStart(0);
+        setTouchEnd(0);
+    };
+
     return (
         <>
             {/* Desktop View */}
             <div className={`hidden md:flex group flex-row ${index % 2 !== 0 ? 'flex-row-reverse' : 'flex-row'} items-center gap-12 lg:gap-24 py-20 border-b border-stone-800/50 last:border-0`}>
                 {/* Primary Image Cover */}
-                <div className="w-[45%] shrink-0">
-                     <div className="relative w-full cursor-pointer overflow-hidden rounded-[2rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.8)] transition-all duration-1000 ease-out hover:shadow-[0_20px_50px_-15px_rgba(255,255,255,0.05)] bg-[#050505] border border-white/5 aspect-[4/5] group/img" onClick={() => setIsFullScreen(true)}>
+                <div className="w-[45%] shrink-0 relative group/primary">
+                     {allImages.length > 1 && (
+                         <button 
+                             onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+                             className="absolute -left-6 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 hover:scale-110 text-white p-3 rounded-full opacity-0 group-hover/primary:opacity-100 transition-all backdrop-blur-sm border border-white/10 hidden md:flex"
+                         >
+                             <ChevronLeft size={24} />
+                         </button>
+                     )}
+                     <div 
+                         className="relative w-full cursor-pointer overflow-hidden rounded-[2rem] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.8)] transition-all duration-1000 ease-out hover:shadow-[0_20px_50px_-15px_rgba(255,255,255,0.05)] bg-[#050505] border border-white/5 aspect-[4/5] group/img" 
+                         onClick={() => setIsFullScreen(true)}
+                         onTouchStart={handleTouchStart}
+                         onTouchMove={handleTouchMove}
+                         onTouchEnd={handleTouchEnd}
+                     >
                         {currentImage ? (
                             <>
                                 <img src={currentImage} alt={item.title} className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover/img:scale-105 opacity-90 group-hover/img:opacity-100" />
@@ -54,6 +117,14 @@ const LibraryItem: React.FC<{ item: any, index: number }> = ({ item, index }) =>
                             </div>
                         )}
                     </div>
+                     {allImages.length > 1 && (
+                         <button 
+                             onClick={(e) => { e.stopPropagation(); handleNext(); }}
+                             className="absolute -right-6 top-1/2 -translate-y-1/2 z-20 bg-black/60 hover:bg-black/80 hover:scale-110 text-white p-3 rounded-full opacity-0 group-hover/primary:opacity-100 transition-all backdrop-blur-sm border border-white/10 hidden md:flex"
+                         >
+                             <ChevronRight size={24} />
+                         </button>
+                     )}
                 </div>
                 
                 {/* Story & Details */}
@@ -90,9 +161,15 @@ const LibraryItem: React.FC<{ item: any, index: number }> = ({ item, index }) =>
             </div>
 
             {/* Mobile View */}
-            <div className="flex md:hidden flex-col mb-10 w-full relative">
+            <div className="flex md:hidden flex-col mb-10 w-full relative group/primary">
                  <div className="bg-[#121212] rounded-[1.5rem] overflow-hidden border border-white/5 shadow-2xl relative flex flex-col">
-                    <div className="w-full aspect-square relative cursor-pointer shrink-0" onClick={() => setIsFullScreen(true)}>
+                    <div 
+                        className="w-full aspect-square relative cursor-pointer shrink-0" 
+                        onClick={() => setIsFullScreen(true)}
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                    >
                         {currentImage ? (
                             <>
                                 <img src={currentImage} alt={item.title} className="w-full h-full object-cover" />
@@ -109,24 +186,30 @@ const LibraryItem: React.FC<{ item: any, index: number }> = ({ item, index }) =>
                         </div>
                     </div>
 
-                    <div className="px-5 pb-6 pt-1">
-                        <div className="text-stone-400 text-xs font-light leading-relaxed tracking-wide space-y-3 mb-6">
-                            <p>{item.story1}</p>
-                            {item.story2 && <p>{item.story2}</p>}
-                            {item.story3 && <p>{item.story3}</p>}
-                        </div>
-
+                    <div className="px-5 pb-6 pt-4">
                         {item.galleryImages && item.galleryImages.length > 0 && (
-                            <div className="mt-2 bg-[#080808] rounded-xl p-3 border border-white/5">
+                            <div className="mb-6 bg-[#080808] rounded-xl p-3 border border-white/5">
                                 <p className="text-[8px] font-bold tracking-[0.3em] uppercase text-stone-500 mb-2 px-1">Gallery</p>
                                 <GalleryRow images={item.galleryImages} onSelect={setCurrentImage} />
                             </div>
                         )}
+
+                        <div className="text-stone-400 text-xs font-light leading-relaxed tracking-wide space-y-3">
+                            <p>{item.story1}</p>
+                            {item.story2 && <p>{item.story2}</p>}
+                            {item.story3 && <p>{item.story3}</p>}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {isFullScreen && <FullScreenImageViewer src={currentImage} alt={item.title} onClose={() => setIsFullScreen(false)} />}
+            {isFullScreen && <FullScreenImageViewer 
+                src={currentImage} 
+                alt={item.title} 
+                onClose={() => setIsFullScreen(false)} 
+                onNext={allImages.length > 1 ? handleNext : undefined}
+                onPrev={allImages.length > 1 ? handlePrev : undefined}
+            />}
         </>
     )
 }

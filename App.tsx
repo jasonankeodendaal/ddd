@@ -308,7 +308,7 @@ const App: React.FC = () => {
     }
   });
 
-  const [currentView, setCurrentView] = useState<'home' | 'admin' | 'photography' | 'photography_admin'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'admin' | 'photography' | 'magicalmemories_admin'>('home');
   const [isIntroVisible, setIsIntroVisible] = useState(true);
   
   const location = useLocation();
@@ -368,7 +368,7 @@ const App: React.FC = () => {
     const path = location.pathname;
     if (path === '/' || path === '/boshome') setCurrentView('home');
     else if (path === '/magicalmemories' || path.startsWith('/magicalmemories/')) setCurrentView('photography');
-    else if (path === '/magicalmemories_admin') setCurrentView('photography_admin');
+    else if (path === '/magicalmemories_admin') setCurrentView('magicalmemories_admin');
     else if (path === '/admin') setCurrentView('admin');
   }, [location]);
 

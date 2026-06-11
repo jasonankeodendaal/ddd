@@ -18,6 +18,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onAddBooking, settings }) => 
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [waLink, setWaLink] = useState('');
   const [referenceImages, setReferenceImages] = useState<File[]>([]);
   const [referenceImagePreviews, setReferenceImagePreviews] = useState<string[]>([]);
 
@@ -103,17 +104,32 @@ const ContactForm: React.FC<ContactFormProps> = ({ onAddBooking, settings }) => 
     });
     
     // Build WhatsApp message
-    const waMessage = `Hello, I'd like to book an appointment with Bos Salon.
-Name: ${name}
-Email: ${email}
-Booking Date: ${bookingDate}
-Service Options: ${selectedOptions.join(', ')}
-Message: ${message}
-Reference Images: ${referenceImageUrls.join('\n')}`;
+    const waMessage = `✨ *New Appointment Request | Bos Salon* ✨
+
+👤 *Client Details*
+• Name: ${name}
+• Email: ${email}
+• WhatsApp: ${whatsappNumber}
+
+📅 *Booking Preference*
+• Requested Date: ${bookingDate}
+• Selected Services: ${selectedOptions.length > 0 ? selectedOptions.join(', ') : 'None selected'}
+
+💬 *Additional Notes*
+${message || 'No additional message provided.'}
+
+📸 *Reference Material*
+${referenceImageUrls.length > 0 ? referenceImageUrls.join('\n') : 'No images attached.'}
+
+_Sent via Bos Salon Booking Portal_`;
     
-    // Message is saved to DB, no need to open WhatsApp window explicitly
-    // Company can manually contact them from admin dashboard
+    // Redirect to WhatsApp
+    const adminPhone = settings?.whatsAppNumber || "27795904162";
+    const cleanPhone = adminPhone.replace(/\D/g, '');
+    const whatsAppLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMessage)}`;
     
+    setWaLink(whatsAppLink);
+
     // Reset form and show success message
     setName('');
     setEmail('');
@@ -126,8 +142,13 @@ Reference Images: ${referenceImageUrls.join('\n')}`;
     setReferenceImagePreviews([]);
     setErrorMessage('');
     setIsLoading(false);
-    setSuccessMessage('Booking request sent successfully! We will contact you soon.');
-    setTimeout(() => setSuccessMessage(''), 5000);
+    setSuccessMessage('Booking request processing... Redirecting to WhatsApp to send message.');
+    
+    // Attempt redirect
+    setTimeout(() => {
+        window.open(whatsAppLink, '_blank') || (window.location.href = whatsAppLink);
+        setSuccessMessage('Successfully submitted. If WhatsApp did not open, make sure pop-ups are allowed.');
+    }, 1500);
   };
 
   const today = new Date().toISOString().split('T')[0];
@@ -280,10 +301,24 @@ Reference Images: ${referenceImageUrls.join('\n')}`;
                                 </div>
                                 
                                 {errorMessage && <p className="text-center text-red-500 text-sm">{errorMessage}</p>}
-                                {successMessage && <p className="text-center text-green-600 text-sm">{successMessage}</p>}
+                                {successMessage && (
+                                    <div className="text-center">
+                                         <p className="text-green-600 text-sm font-bold mb-4">{successMessage}</p>
+                                         {waLink && (
+                                             <a 
+                                                 href={waLink} 
+                                                 target="_blank" 
+                                                 rel="noopener noreferrer"
+                                                 className="inline-flex items-center justify-center bg-[#25D366] text-white py-3 px-6 rounded-full font-bold shadow hover:bg-[#1ebd5a] transition"
+                                             >
+                                                 Click Here to Open WhatsApp
+                                             </a>
+                                         )}
+                                    </div>
+                                )}
 
                                 <div>
-                                <button type="submit" disabled={isLoading} className="w-full bg-brand-green text-white py-3 rounded-full font-bold text-lg hover:bg-opacity-90 transition-all duration-300 mt-2 transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                                <button type="submit" disabled={isLoading || !!successMessage} className="w-full bg-brand-green text-white py-3 rounded-full font-bold text-lg hover:bg-opacity-90 transition-all duration-300 mt-2 transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0">
                                     {isLoading ? 'Sending...' : 'Book an appointment'}
                                 </button>
                                 </div>

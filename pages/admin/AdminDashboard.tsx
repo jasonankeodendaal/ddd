@@ -694,7 +694,7 @@ const AdminDashboard: React.FC<AdminDashboardComponentProps> = (props) => {
                   </div>
 
                   <div className="flex gap-2">
-                       <button onClick={() => props.onNavigate('photography_admin')} className="p-2 sm:px-4 text-xs font-bold uppercase tracking-widest text-white bg-indigo-600 rounded-full hover:bg-indigo-700 mx-2" title="Photography Panel">Photo Panel</button>
+                       <button onClick={() => props.onNavigate('magicalmemories_admin')} className="p-2 sm:px-4 text-xs font-bold uppercase tracking-widest text-white bg-indigo-600 rounded-full hover:bg-indigo-700 mx-2" title="Photography Panel">Photo Panel</button>
                        <button onClick={() => props.onNavigate('home')} className="p-2 text-admin-dark-text-secondary hover:text-admin-dark-text" title="View Site"><SiteIcon /></button>
                        <button onClick={props.onLogout} className="p-2 text-red-500 hover:text-red-600" title="Logout"><LogoutIcon /></button>
                   </div>

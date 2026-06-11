@@ -2,7 +2,7 @@ import React, { useState, FormEvent, MouseEvent } from 'react';
 import { dbLogin, dbLoginWithGoogle } from '../utils/dbAdapter';
 
 interface AdminLoginPageProps {
-  onNavigate: (view: 'home' | 'admin' | 'photography' | 'photography_admin') => void;
+  onNavigate: (view: 'home' | 'admin' | 'photography' | 'magicalmemories_admin') => void;
   logoUrl: string;
 }
 

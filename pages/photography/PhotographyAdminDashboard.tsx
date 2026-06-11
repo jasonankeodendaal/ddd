@@ -4,7 +4,7 @@ import TrashIcon from '../../components/icons/TrashIcon';
 
 interface Props {
   user: any;
-  onNavigate: (view: 'home' | 'admin' | 'photography' | 'photography_admin') => void;
+  onNavigate: (view: 'home' | 'admin' | 'photography' | 'magicalmemories_admin') => void;
 }
 
 const PhotographyAdminDashboard: React.FC<Props> = ({ user, onNavigate }) => {
